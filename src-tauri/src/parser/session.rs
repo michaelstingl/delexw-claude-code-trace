@@ -41,6 +41,10 @@ pub struct SessionInfo {
     pub output_tokens: i64,
     pub cache_read_tokens: i64,
     pub cache_creation_tokens: i64,
+    /// Context-window occupancy of the last complete main-context assistant turn
+    /// (`input + cache_read + cache_creation`), NOT a cumulative sum like the
+    /// `*_tokens` fields above. Sidechain/subagent turns never set this.
+    pub context_tokens: i64,
     pub cost_usd: f64,
     pub duration_ms: i64,
     pub model: String,
@@ -496,6 +500,7 @@ pub fn discover_project_sessions(project_dir: &str) -> Result<Vec<SessionInfo>, 
             output_tokens: meta.output_tokens,
             cache_read_tokens: meta.cache_read_tokens,
             cache_creation_tokens: meta.cache_creation_tokens,
+            context_tokens: meta.context_tokens,
             cost_usd: meta.cost_usd,
             duration_ms: meta.duration_ms,
             model: meta.model,
@@ -816,6 +821,7 @@ pub fn session_info_from_metadata(
         output_tokens: meta.output_tokens,
         cache_read_tokens: meta.cache_read_tokens,
         cache_creation_tokens: meta.cache_creation_tokens,
+        context_tokens: meta.context_tokens,
         cost_usd: meta.cost_usd,
         duration_ms: meta.duration_ms,
         model: meta.model,
@@ -874,6 +880,9 @@ pub(crate) struct SessionMetadata {
     pub(crate) output_tokens: i64,
     pub(crate) cache_read_tokens: i64,
     pub(crate) cache_creation_tokens: i64,
+    /// Context-window occupancy of the last complete main-context assistant turn
+    /// (`input + cache_read + cache_creation`), NOT a cumulative sum.
+    pub(crate) context_tokens: i64,
     pub(crate) cost_usd: f64,
     pub(crate) duration_ms: i64,
     pub(crate) model: String,
@@ -894,6 +903,7 @@ impl Default for SessionMetadata {
             output_tokens: 0,
             cache_read_tokens: 0,
             cache_creation_tokens: 0,
+            context_tokens: 0,
             cost_usd: 0.0,
             duration_ms: 0,
             model: String::new(),
@@ -928,6 +938,11 @@ pub(crate) fn scan_session_metadata(path: &str) -> SessionMetadata {
     // Token deduplication: track per-requestId usage, sum once at end.
     use super::subagent::TokenSnapshot;
     let mut request_tokens: HashMap<String, TokenSnapshot> = HashMap::new();
+
+    // Context-window occupancy of the last complete main-context assistant turn.
+    // Overwritten as later turns are seen, so the last one wins (see the scan-loop
+    // update below); sidechain turns never touch it.
+    let mut last_context: Option<i64> = None;
 
     // Ongoing detection state (one-pass, ported from jsonl.ts).
     let mut activity_index: usize = 0;
@@ -1083,6 +1098,12 @@ pub(crate) fn scan_session_metadata(path: &str) -> SessionMetadata {
                         has_stop_reason: has_stop,
                     };
 
+                    // Context-window occupancy = the input side of the latest main-context turn.
+                    // Prefer complete (has_stop_reason) turns; overwrite so the last one wins.
+                    if !is_sidechain && (snap.has_stop_reason || last_context.is_none()) {
+                        last_context = Some(snap.input + snap.cache_read + snap.cache_create);
+                    }
+
                     let request_id = raw.get("requestId").and_then(|v| v.as_str()).unwrap_or("");
                     if !request_id.is_empty() {
                         // Prefer complete entries over partial streaming snapshots.
@@ -1205,6 +1226,7 @@ pub(crate) fn scan_session_metadata(path: &str) -> SessionMetadata {
         meta.cache_read_tokens += snap.cache_read;
         meta.cache_creation_tokens += snap.cache_create;
     }
+    meta.context_tokens = last_context.unwrap_or(0);
 
     // Compute cost per-model (accurate for mixed opus/haiku/sonnet sessions).
     meta.cost_usd = super::subagent::estimate_cost_from_snapshots(&request_tokens, &fallback);
@@ -1751,6 +1773,7 @@ mod tests {
             output_tokens: 0,
             cache_read_tokens: 0,
             cache_creation_tokens: 0,
+            context_tokens: 0,
             cost_usd: 0.0,
             duration_ms: 0,
             model: String::new(),
@@ -3056,6 +3079,24 @@ mod tests {
         );
 
         std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn context_tokens_is_last_turn_not_cumulative() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("ctx.jsonl");
+        // Turn 1: input 100, cache_read 1000 ; Turn 2 (last): input 50, cache_read 5000, cache_creation 200
+        // uuid is required — entries without it are skipped before token accumulation (see the
+        // `if uuid.is_empty() { continue; }` guard near the top of the scan loop).
+        let body = concat!(
+            r#"{"type":"assistant","uuid":"a1","requestId":"r1","message":{"model":"claude-opus-4","stop_reason":"end_turn","usage":{"input_tokens":100,"cache_read_input_tokens":1000,"output_tokens":10}}}"#, "\n",
+            r#"{"type":"assistant","uuid":"a2","requestId":"r2","message":{"model":"claude-opus-4","stop_reason":"end_turn","usage":{"input_tokens":50,"cache_read_input_tokens":5000,"cache_creation_input_tokens":200,"output_tokens":20}}}"#, "\n",
+        );
+        std::fs::write(&path, body).unwrap();
+
+        let meta = scan_session_metadata(path.to_str().unwrap());
+        assert_eq!(meta.context_tokens, 50 + 5000 + 200); // last turn only = 5250
+        assert!(meta.total_tokens >= 100 + 1000 + 50 + 5000 + 200); // totals still cumulative
     }
 
     #[test]
