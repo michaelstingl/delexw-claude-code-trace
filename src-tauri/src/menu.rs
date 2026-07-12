@@ -19,9 +19,13 @@ use tauri::{Manager, Runtime};
 /// rendered by macOS, so it can't be used for this instead.
 pub fn about_metadata() -> AboutMetadata<'static> {
     let v = crate::version::current();
+    // Empirically on macOS the `version` field renders as the leading line and
+    // `short_version` in the trailing parentheses (the reverse of what the
+    // docs.rs notes imply). So: version = plain semver (leads), short_version =
+    // "branch @ commit" (parens) -> "0.11.0 (edge @ 94c9070)".
     AboutMetadataBuilder::new()
-        .short_version(Some(v.version.clone()))
-        .version(Some(v.about_parenthetical()))
+        .version(Some(v.version.clone()))
+        .short_version(Some(v.about_parenthetical()))
         .build()
 }
 
@@ -70,7 +74,7 @@ mod tests {
     fn about_metadata_builds_from_short_version_and_parenthetical() {
         // AboutMetadata doesn't expose getters, so we can't read the built
         // struct's fields back directly; instead verify the source of truth
-        // it's built from (short_version = plain version, version = the
+        // it's built from (version = plain semver, short_version = the
         // about_parenthetical helper) and that construction succeeds.
         let v = crate::version::current();
         assert_eq!(v.version, env!("CARGO_PKG_VERSION"));
