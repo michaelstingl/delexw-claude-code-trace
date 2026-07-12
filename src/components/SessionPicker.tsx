@@ -1,9 +1,12 @@
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useState, useEffect } from "react";
 import { useScrollToSelected } from "../hooks/useScrollToSelected";
 import { useVisibleSessions } from "../hooks/useVisibleSessions";
 import { useRegisterViewActions, type ViewActionsRef } from "../hooks/useViewActions";
-import type { SessionInfo } from "../types";
+import type { SessionInfo, Bookmark } from "../types";
 import { OngoingDots } from "./OngoingDots";
+import { BookmarkStar } from "./BookmarkStar";
+import { PinnedGroup } from "./PinnedGroup";
+import { listBookmarks, isBookmarked } from "../lib/bookmarks";
 import {
   formatTokens,
   formatDuration,
@@ -68,6 +71,11 @@ export function SessionPicker({
   const searchRef = useRef<HTMLInputElement>(null);
   const registerVisible = useVisibleSessions(onVisiblePathsChange ?? noop);
 
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  useEffect(() => {
+    listBookmarks().then(setBookmarks);
+  }, []);
+
   // Register Top/Bottom against the picker's own scroll container. Falls back to
   // a local ref when no registry is supplied (e.g. in isolated tests).
   const fallbackActionsRef = useRef({});
@@ -126,6 +134,15 @@ export function SessionPicker({
           </div>
         )}
 
+        {!loading && (
+          <PinnedGroup
+            bookmarks={bookmarks}
+            sessions={sessions}
+            onSelect={onSelect}
+            onBookmarksChange={setBookmarks}
+          />
+        )}
+
         {!loading && sessions.length === 0 && (
           <div className="picker__empty">
             {searchQuery ? "No matching sessions" : "No sessions found"}
@@ -155,6 +172,11 @@ export function SessionPicker({
                     <span className="picker__session-icon">
                       <BsClaude />
                     </span>
+                    <BookmarkStar
+                      session={session}
+                      bookmarked={isBookmarked(bookmarks, session.session_id)}
+                      onChange={setBookmarks}
+                    />
                     <span
                       className={`picker__session-preview${session.name ? " picker__session-preview--named" : ""}`}
                     >
