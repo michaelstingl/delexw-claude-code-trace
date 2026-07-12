@@ -1098,7 +1098,7 @@ pub(crate) fn scan_session_metadata(path: &str) -> SessionMetadata {
                         has_stop_reason: has_stop,
                     };
 
-                    // Context-window occupancy = the input side of the latest main-context turn.
+                    // Context-window occupancy = input + cache-read + cache-creation of the latest main-context turn.
                     // Prefer complete (has_stop_reason) turns; overwrite so the last one wins.
                     if !is_sidechain && (snap.has_stop_reason || last_context.is_none()) {
                         last_context = Some(snap.input + snap.cache_read + snap.cache_create);

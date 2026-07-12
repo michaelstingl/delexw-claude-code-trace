@@ -11,9 +11,15 @@ use crate::state::AppState;
 // Persistence errors are propagated rather than swallowed — a silent save
 // failure would leave the in-memory list and the on-disk file out of sync
 // without either surface ever finding out.
+//
+// Transactional: the mutation is applied to a clone first, and the clone is
+// only committed into `state_list` once `save_bookmarks` succeeds. On error,
+// `state_list` is left untouched, so memory and disk never diverge.
 pub fn apply_add(state_list: &mut Vec<Bookmark>, b: Bookmark) -> Result<Vec<Bookmark>, String> {
-    crate::bookmarks::upsert(state_list, b);
-    crate::bookmarks::save_bookmarks(state_list)?;
+    let mut new_list = state_list.clone();
+    crate::bookmarks::upsert(&mut new_list, b);
+    crate::bookmarks::save_bookmarks(&new_list)?;
+    *state_list = new_list;
     Ok(state_list.clone())
 }
 
@@ -21,8 +27,10 @@ pub fn apply_remove(
     state_list: &mut Vec<Bookmark>,
     session_id: &str,
 ) -> Result<Vec<Bookmark>, String> {
-    crate::bookmarks::remove(state_list, session_id);
-    crate::bookmarks::save_bookmarks(state_list)?;
+    let mut new_list = state_list.clone();
+    crate::bookmarks::remove(&mut new_list, session_id);
+    crate::bookmarks::save_bookmarks(&new_list)?;
+    *state_list = new_list;
     Ok(state_list.clone())
 }
 
