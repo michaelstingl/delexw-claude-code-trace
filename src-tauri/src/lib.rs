@@ -3,6 +3,8 @@
 mod commands;
 mod convert;
 mod http_api;
+#[cfg(feature = "desktop")]
+mod menu;
 mod parser;
 mod process;
 mod session_load;
@@ -112,6 +114,13 @@ fn run_desktop(args: &[String]) {
         .setup(move |app| {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(http_api::start_http_server(handle));
+
+            // Install a custom menu so the "About" panel shows version+commit.
+            // On macOS a custom menu REPLACES Tauri's default one, so
+            // `menu::build_menu` reconstructs the standard App/Edit/Window
+            // submenus explicitly to keep Cmd+C/Cmd+V/Cmd+Q etc. working.
+            let menu = menu::build_menu(app)?;
+            app.set_menu(menu)?;
 
             if web_only {
                 if no_open {
