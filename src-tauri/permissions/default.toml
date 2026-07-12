@@ -18,6 +18,7 @@ permissions = [
   "allow-set-wsl-distros",
   "allow-switch-to-browser",
   "allow-focus-session-window",
+  "allow-get-version",
 ]
 
 [[permission]]
@@ -104,3 +105,8 @@ commands.allow = ["switch_to_browser"]
 identifier = "allow-focus-session-window"
 description = "Allow focusing a live session's terminal window"
 commands.allow = ["focus_session_window"]
+
+[[permission]]
+identifier = "allow-get-version"
+description = "Allow reading the app's version, commit, and dirty status"
+commands.allow = ["get_version"]
