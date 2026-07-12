@@ -710,6 +710,42 @@ body {
   white-space: nowrap;
 }
 
+/* ---- Bookmark Star ---- */
+
+.bookmark-star {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    color 0.1s;
+  flex-shrink: 0;
+}
+
+.bookmark-star:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.bookmark-star--on,
+.bookmark-star--on:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
 @keyframes pulse {
   0%,
   100% {
