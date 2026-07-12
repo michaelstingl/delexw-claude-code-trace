@@ -222,9 +222,19 @@ async fn api_list_bookmarks(State(state): State<Arc<HttpState>>) -> Response {
     ok_json(&guard.clone())
 }
 
+/// Wire shape sent by the frontend client (`add_bookmark` in `src/lib/invoke.ts`):
+/// `{ bookmark: {...} }`. Matches the house convention of other POST bodies
+/// below (e.g. `SetDirBody`, `FocusBody`) — a wrapper struct whose field name
+/// mirrors the client's wrapper key, so the JSON actually deserializes into
+/// the nested value instead of silently falling back to `Bookmark::default()`.
+#[derive(Deserialize)]
+struct AddBookmarkBody {
+    bookmark: crate::bookmarks::Bookmark,
+}
+
 async fn api_add_bookmark(
     State(state): State<Arc<HttpState>>,
-    Json(bookmark): Json<crate::bookmarks::Bookmark>,
+    Json(body): Json<AddBookmarkBody>,
 ) -> Response {
     let app_state = app_state(&state);
     let mut guard = match app_state.bookmarks.lock() {
@@ -233,7 +243,7 @@ async fn api_add_bookmark(
             return err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
         }
     };
-    match crate::commands::bookmarks::apply_add(&mut guard, bookmark) {
+    match crate::commands::bookmarks::apply_add(&mut guard, body.bookmark) {
         Ok(list) => ok_json(&list),
         Err(e) => err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e),
     }
@@ -710,5 +720,25 @@ mod tests {
         };
         let resp = api_focus_session_window(Json(body)).await;
         assert_eq!(resp.status(), axum::http::StatusCode::BAD_REQUEST);
+    }
+
+    // -----------------------------------------------------------------------
+    // Bookmarks — web wire shape
+    // -----------------------------------------------------------------------
+
+    // Regression test for the web-mode bug where `api_add_bookmark` deserialized
+    // the POST body as a bare `Bookmark` while the frontend client sends
+    // `{ "bookmark": {...} }`. Because every `Bookmark`/`BookmarkMeta` field is
+    // `#[serde(default)]`, that mismatch silently produced `Bookmark::default()`
+    // (an empty, `session_id: ""` ghost bookmark) instead of erroring. This
+    // deserializes the exact JSON the client sends and asserts the nested
+    // fields actually round-trip.
+    #[test]
+    fn add_bookmark_body_deserializes_client_wire_shape() {
+        let raw = r#"{"bookmark":{"session_id":"s1","label":"L"}}"#;
+        let body: AddBookmarkBody = serde_json::from_str(raw).expect("valid wire shape");
+        assert_eq!(body.bookmark.session_id, "s1");
+        assert_ne!(body.bookmark.session_id, "");
+        assert_eq!(body.bookmark.label, "L");
     }
 }
