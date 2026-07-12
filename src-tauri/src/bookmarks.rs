@@ -4,27 +4,44 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BookmarkMeta {
-    #[serde(default)] pub model: String,
-    #[serde(default)] pub turn_count: i32,
-    #[serde(default)] pub total_tokens: i64,
-    #[serde(default)] pub input_tokens: i64,
-    #[serde(default)] pub output_tokens: i64,
-    #[serde(default)] pub cache_read_tokens: i64,
-    #[serde(default)] pub cache_creation_tokens: i64,
-    #[serde(default)] pub context_tokens: i64,
-    #[serde(default)] pub cost_usd: f64,
-    #[serde(default)] pub duration_ms: i64,
-    #[serde(default)] pub mod_time: String,
-    #[serde(default)] pub size_bytes: i64,
+    #[serde(default)]
+    pub model: String,
+    #[serde(default)]
+    pub turn_count: i32,
+    #[serde(default)]
+    pub total_tokens: i64,
+    #[serde(default)]
+    pub input_tokens: i64,
+    #[serde(default)]
+    pub output_tokens: i64,
+    #[serde(default)]
+    pub cache_read_tokens: i64,
+    #[serde(default)]
+    pub cache_creation_tokens: i64,
+    #[serde(default)]
+    pub context_tokens: i64,
+    #[serde(default)]
+    pub cost_usd: f64,
+    #[serde(default)]
+    pub duration_ms: i64,
+    #[serde(default)]
+    pub mod_time: String,
+    #[serde(default)]
+    pub size_bytes: i64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Bookmark {
-    #[serde(default)] pub session_id: String,
-    #[serde(default)] pub label: String,
-    #[serde(default)] pub recap: Option<String>,
-    #[serde(default)] pub meta: BookmarkMeta,
-    #[serde(default)] pub bookmarked_at: String,
+    #[serde(default)]
+    pub session_id: String,
+    #[serde(default)]
+    pub label: String,
+    #[serde(default)]
+    pub recap: Option<String>,
+    #[serde(default)]
+    pub meta: BookmarkMeta,
+    #[serde(default)]
+    pub bookmarked_at: String,
 }
 
 fn bookmarks_path() -> Result<PathBuf, String> {
@@ -63,24 +80,34 @@ mod tests {
     use super::*;
 
     fn sample(id: &str, label: &str) -> Bookmark {
-        Bookmark { session_id: id.into(), label: label.into(), recap: None,
-                   meta: BookmarkMeta::default(), bookmarked_at: "2026-07-12T00:00:00Z".into() }
+        Bookmark {
+            session_id: id.into(),
+            label: label.into(),
+            recap: None,
+            meta: BookmarkMeta::default(),
+            bookmarked_at: "2026-07-12T00:00:00Z".into(),
+        }
     }
 
     #[test]
     fn upsert_dedupes_and_puts_newest_first() {
         let mut list = vec![sample("a", "A"), sample("b", "B")];
-        upsert(&mut list, sample("a", "A2"));      // re-pin a with a new snapshot
+        upsert(&mut list, sample("a", "A2")); // re-pin a with a new snapshot
         assert_eq!(list.len(), 2);
-        assert_eq!(list[0].session_id, "a");        // moved to front
-        assert_eq!(list[0].label, "A2");            // snapshot replaced
+        assert_eq!(list[0].session_id, "a"); // moved to front
+        assert_eq!(list[0].label, "A2"); // snapshot replaced
     }
 
     #[test]
     fn remove_drops_by_session_id() {
         let mut list = vec![sample("a", "A"), sample("b", "B")];
         remove(&mut list, "a");
-        assert_eq!(list.iter().map(|b| b.session_id.clone()).collect::<Vec<_>>(), vec!["b"]);
+        assert_eq!(
+            list.iter()
+                .map(|b| b.session_id.clone())
+                .collect::<Vec<_>>(),
+            vec!["b"]
+        );
     }
 
     #[test]
