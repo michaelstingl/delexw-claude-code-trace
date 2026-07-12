@@ -746,6 +746,31 @@ body {
   color: #fff;
 }
 
+/* Match the sibling `.message__detail-btn` in a pinned row so corners/padding align. */
+.session-row__update {
+  font-size: 11px;
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.session-row__update:hover:not(:disabled) {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.session-row__update:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 @keyframes pulse {
   0%,
   100% {
