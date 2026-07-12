@@ -92,6 +92,7 @@ mod tests {
             output_tokens: 50,
             cache_read_tokens: 0,
             cache_creation_tokens: 0,
+            context_tokens: 0,
             cost_usd: 0.01,
             duration_ms: 1000,
             cwd: "/tmp".to_string(),
