@@ -1,5 +1,6 @@
 import type { SessionInfo, Bookmark } from "../types";
 import { BookmarkStar } from "./BookmarkStar";
+import { addBookmark } from "../lib/bookmarks";
 import {
   formatTokens,
   formatDuration,
@@ -10,6 +11,7 @@ import {
 } from "../lib/format";
 import { getModelColor } from "../lib/theme";
 import { BsClaude } from "react-icons/bs";
+import { VscStarFull } from "react-icons/vsc";
 import { ForwardIcon, CostIcon } from "./Icons";
 
 interface PinnedGroupProps {
@@ -84,6 +86,16 @@ function LivePinnedRow({
         >
           Detail <ForwardIcon />
         </button>
+        <button
+          className="session-row__update"
+          onClick={async (e) => {
+            e.stopPropagation();
+            onBookmarksChange(await addBookmark(session));
+          }}
+          title="Re-freeze this bookmark from the current session"
+        >
+          Update snapshot
+        </button>
       </div>
       {session.recap && (
         <div className="picker__session-subtitle picker__session-subtitle--recap">
@@ -135,12 +147,19 @@ function FrozenPinnedRow({ bookmark }: { bookmark: Bookmark }) {
           disabled
           aria-label="Session unavailable"
         >
-          ★
+          <VscStarFull aria-hidden />
         </button>
         <span className="picker__session-preview">{truncate(bookmark.label, 80)}</span>
         <span className="picker__session-unavailable-badge">unavailable</span>
         <button className="message__detail-btn" disabled>
           Detail <ForwardIcon />
+        </button>
+        <button
+          className="session-row__update"
+          disabled
+          title="Session unavailable — nothing to re-freeze"
+        >
+          Update snapshot
         </button>
       </div>
       {bookmark.recap && (

@@ -11,7 +11,7 @@ vi.mock("../lib/bookmarks", () => ({
   isBookmarked: (list: Bookmark[], sessionId: string) =>
     list.some((b) => b.session_id === sessionId),
 }));
-import { listBookmarks } from "../lib/bookmarks";
+import { listBookmarks, addBookmark } from "../lib/bookmarks";
 
 type IOCallback = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => void;
 
@@ -122,6 +122,73 @@ describe("SessionPicker", () => {
     // Live name wins over the frozen label.
     expect(screen.getAllByText("Live name").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("Frozen name")).not.toBeInTheDocument();
+  });
+
+  it("does not duplicate a pinned session in the normal date-group list", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Frozen name" }),
+    ]);
+    const sessions = [makeSession({ session_id: "session1", name: "Live name" })];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    // Rendered exactly once (in ★ Pinned) — not again in the "Today" date group.
+    expect(screen.getAllByText("Live name")).toHaveLength(1);
+    expect(document.querySelectorAll(".picker__session--pinned")).toHaveLength(1);
+    expect(
+      document.querySelectorAll(".picker__session:not(.picker__session--pinned)"),
+    ).toHaveLength(0);
+    // Its date-group header ("Today") has no other sessions either, so it's omitted.
+    expect(screen.queryByText("Today")).not.toBeInTheDocument();
+  });
+
+  it("re-freezes via addBookmark when Update snapshot is clicked (live present)", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Frozen name" }),
+    ]);
+    const sessions = [makeSession({ session_id: "session1", name: "Live name" })];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    const updateBtn = screen.getByRole("button", { name: /update snapshot/i });
+    expect(updateBtn).not.toBeDisabled();
+    fireEvent.click(updateBtn);
+    await waitFor(() => expect(addBookmark).toHaveBeenCalledWith(sessions[0]));
+  });
+
+  it("disables Update snapshot when the session is unavailable", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "gone", label: "Frozen", recap: "R" }),
+    ]);
+    render(
+      <SessionPicker
+        sessions={[]}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText("Frozen")).toBeInTheDocument());
+    const updateBtn = screen.getByRole("button", { name: /update snapshot/i });
+    expect(updateBtn).toBeDisabled();
   });
 
   it("falls back to the frozen snapshot with disabled actions when the JSONL is gone", async () => {

@@ -86,6 +86,7 @@ export function SessionPicker({
   });
 
   const dateGroups = groupByDate(sessions);
+  const pinnedIds = useMemo(() => new Set(bookmarks.map((b) => b.session_id)), [bookmarks]);
 
   const { totalTokens, totalCost } = useMemo(() => {
     let tokens = 0;
@@ -149,104 +150,112 @@ export function SessionPicker({
           </div>
         )}
 
-        {dateGroups.map((group) => (
-          <div key={group.category}>
-            <div className="picker__group-header">{group.category}</div>
-            {group.items.map((session) => {
-              const idx = flatIndex++;
-              const isSelected = idx === selectedIndex;
-              const model = shortModel(session.model);
-              const modelClr = getModelColor(session.model);
-              const sessionCost = session.cost_usd;
-              const showRecap = recapPreview && !!session.recap;
+        {dateGroups.map((group) => {
+          // A session already shown in ★ Pinned is skipped here so it renders only
+          // once. flatIndex still advances for it so index N keeps pointing at the
+          // same entry of the `sessions` prop as before (keyboard nav in the parent
+          // indexes into that array directly).
+          const hasVisibleItems = group.items.some((s) => !pinnedIds.has(s.session_id));
+          return (
+            <div key={group.category}>
+              {hasVisibleItems && <div className="picker__group-header">{group.category}</div>}
+              {group.items.map((session) => {
+                const idx = flatIndex++;
+                if (pinnedIds.has(session.session_id)) return null;
+                const isSelected = idx === selectedIndex;
+                const model = shortModel(session.model);
+                const modelClr = getModelColor(session.model);
+                const sessionCost = session.cost_usd;
+                const showRecap = recapPreview && !!session.recap;
 
-              return (
-                <div
-                  key={session.path}
-                  ref={mergeRefs(isSelected ? selectedRef : null, registerVisible(session.path))}
-                  className={`picker__session${isSelected ? " picker__session--selected" : ""}${session.is_ongoing ? " picker__session--ongoing" : ""}`}
-                  onMouseEnter={() => onSelectIndex?.(idx)}
-                  onClick={() => onSelect(session)}
-                >
-                  <div className="picker__session-top">
-                    <span className="picker__session-icon">
-                      <BsClaude />
-                    </span>
-                    <BookmarkStar
-                      session={session}
-                      bookmarked={isBookmarked(bookmarks, session.session_id)}
-                      onChange={setBookmarks}
-                    />
-                    <span
-                      className={`picker__session-preview${session.name ? " picker__session-preview--named" : ""}`}
-                    >
-                      {truncate(session.name || session.first_message || session.session_id, 80)}
-                    </span>
-                    {session.is_ongoing && (
-                      <span className="picker__session-ongoing">
-                        <OngoingDots count={1} />
-                        ACTIVE
+                return (
+                  <div
+                    key={session.path}
+                    ref={mergeRefs(isSelected ? selectedRef : null, registerVisible(session.path))}
+                    className={`picker__session${isSelected ? " picker__session--selected" : ""}${session.is_ongoing ? " picker__session--ongoing" : ""}`}
+                    onMouseEnter={() => onSelectIndex?.(idx)}
+                    onClick={() => onSelect(session)}
+                  >
+                    <div className="picker__session-top">
+                      <span className="picker__session-icon">
+                        <BsClaude />
                       </span>
-                    )}
-                    <button
-                      className="message__detail-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(session);
-                      }}
-                    >
-                      Detail <ForwardIcon />
-                    </button>
-                  </div>
-                  {showRecap ? (
-                    <div className="picker__session-subtitle picker__session-subtitle--recap">
-                      <span className="picker__recap-label">Recap:</span> {session.recap}
+                      <BookmarkStar
+                        session={session}
+                        bookmarked={isBookmarked(bookmarks, session.session_id)}
+                        onChange={setBookmarks}
+                      />
+                      <span
+                        className={`picker__session-preview${session.name ? " picker__session-preview--named" : ""}`}
+                      >
+                        {truncate(session.name || session.first_message || session.session_id, 80)}
+                      </span>
+                      {session.is_ongoing && (
+                        <span className="picker__session-ongoing">
+                          <OngoingDots count={1} />
+                          ACTIVE
+                        </span>
+                      )}
+                      <button
+                        className="message__detail-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelect(session);
+                        }}
+                      >
+                        Detail <ForwardIcon />
+                      </button>
                     </div>
-                  ) : session.name && session.first_message ? (
-                    <div className="picker__session-subtitle">
-                      {truncate(session.first_message, 80)}
+                    {showRecap ? (
+                      <div className="picker__session-subtitle picker__session-subtitle--recap">
+                        <span className="picker__recap-label">Recap:</span> {session.recap}
+                      </div>
+                    ) : session.name && session.first_message ? (
+                      <div className="picker__session-subtitle">
+                        {truncate(session.first_message, 80)}
+                      </div>
+                    ) : null}
+                    <div className="picker__session-meta">
+                      {pickerFields.model && (
+                        <span className="picker__session-model" style={{ color: modelClr }}>
+                          {model}
+                        </span>
+                      )}
+                      {pickerFields.turns && (
+                        <span className="picker__session-stat">{session.turn_count} turns</span>
+                      )}
+                      {pickerFields.ctx && session.context_tokens > 0 && (
+                        <span className="picker__session-stat">
+                          ctx {formatTokens(session.context_tokens)}
+                        </span>
+                      )}
+                      {pickerFields.tok && session.total_tokens > 0 && (
+                        <span className="picker__session-stat">
+                          {formatTokens(session.total_tokens)} tok
+                        </span>
+                      )}
+                      {pickerFields.cost && sessionCost > 0 && (
+                        <span className="picker__session-stat picker__session-stat--cost">
+                          <CostIcon /> {formatCost(sessionCost)}
+                        </span>
+                      )}
+                      {pickerFields.duration && session.duration_ms > 0 && (
+                        <span className="picker__session-stat">
+                          {formatDuration(session.duration_ms)}
+                        </span>
+                      )}
+                      {session.mod_time && (
+                        <span className="picker__session-time">
+                          {formatExactTime(session.mod_time)}
+                        </span>
+                      )}
                     </div>
-                  ) : null}
-                  <div className="picker__session-meta">
-                    {pickerFields.model && (
-                      <span className="picker__session-model" style={{ color: modelClr }}>
-                        {model}
-                      </span>
-                    )}
-                    {pickerFields.turns && (
-                      <span className="picker__session-stat">{session.turn_count} turns</span>
-                    )}
-                    {pickerFields.ctx && session.context_tokens > 0 && (
-                      <span className="picker__session-stat">
-                        ctx {formatTokens(session.context_tokens)}
-                      </span>
-                    )}
-                    {pickerFields.tok && session.total_tokens > 0 && (
-                      <span className="picker__session-stat">
-                        {formatTokens(session.total_tokens)} tok
-                      </span>
-                    )}
-                    {pickerFields.cost && sessionCost > 0 && (
-                      <span className="picker__session-stat picker__session-stat--cost">
-                        <CostIcon /> {formatCost(sessionCost)}
-                      </span>
-                    )}
-                    {pickerFields.duration && session.duration_ms > 0 && (
-                      <span className="picker__session-stat">
-                        {formatDuration(session.duration_ms)}
-                      </span>
-                    )}
-                    {session.mod_time && (
-                      <span className="picker__session-time">
-                        {formatExactTime(session.mod_time)}
-                      </span>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
