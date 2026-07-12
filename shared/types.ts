@@ -113,6 +113,29 @@ export interface SessionInfo {
   permission_mode: string;
 }
 
+export interface BookmarkMeta {
+  model: string;
+  turn_count: number;
+  total_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_creation_tokens: number;
+  context_tokens: number;
+  cost_usd: number;
+  duration_ms: number;
+  mod_time: string;
+  size_bytes: number;
+}
+
+export interface Bookmark {
+  session_id: string;
+  label: string;
+  recap: string | null;
+  meta: BookmarkMeta;
+  bookmarked_at: string;
+}
+
 export interface SessionMeta {
   cwd: string;
   git_branch: string;
