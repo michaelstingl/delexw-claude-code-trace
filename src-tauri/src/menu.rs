@@ -6,11 +6,22 @@ use tauri::menu::{AboutMetadata, AboutMetadataBuilder, Menu, MenuBuilder, Submen
 use tauri::{Manager, Runtime};
 
 /// The About metadata shown in the "Claude Code Trace ▸ About Claude Code
-/// Trace" panel. The version line is `crate::version::current().display_string()`,
-/// e.g. `"0.11.0 (a1b2c3d)"` or `"0.11.0 (a1b2c3d, dirty)"`.
+/// Trace" panel.
+///
+/// macOS renders this as "Version {short_version} ({version})". If
+/// `short_version` is left unset, it falls back to the bundle's
+/// `CFBundleShortVersionString` (the crate version), so setting only
+/// `.version(...)` to our full display string doubles the version, e.g.
+/// "Version 0.11.0 (0.11.0 · edge (94c9070))". To avoid that we set
+/// `short_version` to the plain version ourselves, and `version` to just the
+/// branch/commit parenthetical (`crate::version::VersionInfo::about_parenthetical`),
+/// producing "Version 0.11.0 (edge @ 94c9070)". Note: `comments` is not
+/// rendered by macOS, so it can't be used for this instead.
 pub fn about_metadata() -> AboutMetadata<'static> {
+    let v = crate::version::current();
     AboutMetadataBuilder::new()
-        .version(Some(crate::version::current().display_string()))
+        .short_version(Some(v.version.clone()))
+        .version(Some(v.about_parenthetical()))
         .build()
 }
 
@@ -56,20 +67,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn about_metadata_version_matches_current_display_string() {
+    fn about_metadata_builds_from_short_version_and_parenthetical() {
+        // AboutMetadata doesn't expose getters, so we can't read the built
+        // struct's fields back directly; instead verify the source of truth
+        // it's built from (short_version = plain version, version = the
+        // about_parenthetical helper) and that construction succeeds.
+        let v = crate::version::current();
+        assert_eq!(v.version, env!("CARGO_PKG_VERSION"));
+        let parenthetical = v.about_parenthetical();
+        assert!(parenthetical.contains(&v.branch));
+        assert!(parenthetical.contains(&v.commit));
+        assert!(parenthetical.contains('@'));
+
         let metadata = about_metadata();
-        // AboutMetadata doesn't expose a getter, so we can't read the field
-        // back directly; instead verify the source of truth it's built from.
-        let expected = crate::version::current().display_string();
-        assert!(expected.starts_with(env!("CARGO_PKG_VERSION")));
-        assert!(expected.contains('('));
-        let _ = metadata; // metadata built successfully with that version
+        let _ = metadata; // metadata built successfully from short_version + parenthetical
     }
 
     #[test]
-    fn about_version_line_includes_commit() {
-        let line = crate::version::current().display_string();
-        assert!(line.contains('('));
-        assert!(line.starts_with(env!("CARGO_PKG_VERSION")));
+    fn about_parenthetical_does_not_repeat_the_version() {
+        // Regression guard for the macOS doubling bug: the parenthetical
+        // that goes into `.version(...)` must not itself contain the crate
+        // version, since macOS already renders "Version {short_version} (...)".
+        let v = crate::version::current();
+        assert!(!v.about_parenthetical().contains(&v.version));
     }
 }

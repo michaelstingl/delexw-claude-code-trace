@@ -3,14 +3,15 @@ import { API_BASE } from "./config";
 
 export function formatVersion(info: VersionInfo): string {
   return info.dirty
-    ? `${info.version} (${info.commit}, dirty)`
-    : `${info.version} (${info.commit})`;
+    ? `${info.version} · ${info.branch} (${info.commit}, dirty)`
+    : `${info.version} · ${info.branch} (${info.commit})`;
 }
 
 export function getWebVersion(): string {
   return formatVersion({
     version: __APP_VERSION__,
     commit: __GIT_COMMIT__,
+    branch: __GIT_BRANCH__,
     dirty: __GIT_DIRTY__,
   });
 }

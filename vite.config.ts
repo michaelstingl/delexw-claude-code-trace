@@ -20,6 +20,8 @@ export default defineConfig(async () => {
   ) as { version: string };
   const commit = git("rev-parse --short HEAD") || "unknown";
   const dirty = git("status --porcelain") !== "";
+  // May be "HEAD" for detached-HEAD builds; that's fine.
+  const branch = git("rev-parse --abbrev-ref HEAD") || "unknown";
 
   return {
     plugins: [react()],
@@ -28,6 +30,7 @@ export default defineConfig(async () => {
       __APP_VERSION__: JSON.stringify(pkg.version),
       __GIT_COMMIT__: JSON.stringify(commit),
       __GIT_DIRTY__: JSON.stringify(dirty),
+      __GIT_BRANCH__: JSON.stringify(branch),
     },
     build: {
       chunkSizeWarningLimit: 1500,

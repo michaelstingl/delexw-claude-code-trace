@@ -185,5 +185,6 @@ export type ViewState = "picker" | "list" | "detail" | "team" | "debug";
 export interface VersionInfo {
   version: string;
   commit: string;
+  branch: string;
   dirty: boolean;
 }

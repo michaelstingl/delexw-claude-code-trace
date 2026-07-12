@@ -18,8 +18,11 @@ fn main() {
     let dirty = git(&["status", "--porcelain"])
         .map(|s| !s.is_empty())
         .unwrap_or(false);
+    // May be "HEAD" for detached-HEAD builds (e.g. some CI/release checkouts); that's fine.
+    let branch = git(&["rev-parse", "--abbrev-ref", "HEAD"]).unwrap_or_else(|| "unknown".into());
     println!("cargo:rustc-env=GIT_COMMIT={commit}");
     println!("cargo:rustc-env=GIT_DIRTY={dirty}");
+    println!("cargo:rustc-env=GIT_BRANCH={branch}");
     println!("cargo:rerun-if-changed=build.rs");
     // Best-effort: re-run when HEAD moves. In a worktree .git is a file; this
     // path may not exist, which is fine — a real release build recompiles.
