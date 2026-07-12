@@ -18,6 +18,9 @@ permissions = [
   "allow-set-wsl-distros",
   "allow-switch-to-browser",
   "allow-focus-session-window",
+  "allow-list-bookmarks",
+  "allow-add-bookmark",
+  "allow-remove-bookmark",
 ]
 
 [[permission]]
@@ -104,3 +107,18 @@ commands.allow = ["switch_to_browser"]
 identifier = "allow-focus-session-window"
 description = "Allow focusing a live session's terminal window"
 commands.allow = ["focus_session_window"]
+
+[[permission]]
+identifier = "allow-list-bookmarks"
+description = "Allow listing bookmarked sessions"
+commands.allow = ["list_bookmarks"]
+
+[[permission]]
+identifier = "allow-add-bookmark"
+description = "Allow adding (or updating) a bookmarked session"
+commands.allow = ["add_bookmark"]
+
+[[permission]]
+identifier = "allow-remove-bookmark"
+description = "Allow removing a bookmarked session"
+commands.allow = ["remove_bookmark"]
