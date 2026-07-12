@@ -1175,6 +1175,36 @@ body {
   flex-shrink: 0;
 }
 
+/* Pinned (bookmarked) rows: same look as a normal row, but grouped under its
+   own "★ Pinned" header above the date-grouped list. */
+.picker__pinned-group {
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.08));
+  margin-bottom: 4px;
+}
+
+/* A bookmark whose JSONL is no longer on disk: greyed out, not clickable, and
+   its actions (Detail, star) are disabled — only the frozen snapshot remains. */
+.session-row--unavailable {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.session-row--unavailable:hover {
+  background: transparent;
+}
+
+.picker__session-unavailable-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg-hover);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
 .picker__empty {
   display: flex;
   align-items: center;

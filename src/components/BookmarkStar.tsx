@@ -18,7 +18,9 @@ export function BookmarkStar({
     if (busy) return;
     setBusy(true);
     try {
-      const list = bookmarked ? await removeBookmark(session.session_id) : await addBookmark(session);
+      const list = bookmarked
+        ? await removeBookmark(session.session_id)
+        : await addBookmark(session);
       onChange(list);
     } finally {
       setBusy(false);

@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { SessionPicker } from "./SessionPicker";
-import type { SessionInfo } from "../types";
+import type { SessionInfo, Bookmark } from "../types";
 import type { ViewActions } from "../hooks/useViewActions";
+
+vi.mock("../lib/bookmarks", () => ({
+  listBookmarks: vi.fn(async () => []),
+  addBookmark: vi.fn(async () => []),
+  removeBookmark: vi.fn(async () => []),
+  isBookmarked: (list: Bookmark[], sessionId: string) =>
+    list.some((b) => b.session_id === sessionId),
+}));
+import { listBookmarks } from "../lib/bookmarks";
 
 type IOCallback = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => void;
 
@@ -65,7 +74,78 @@ function makeSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
   };
 }
 
+function makeBookmark(overrides: Partial<Bookmark> = {}): Bookmark {
+  return {
+    session_id: "session1",
+    label: "Frozen label",
+    recap: null,
+    meta: {
+      model: "claude-sonnet-4-20250514",
+      turn_count: 3,
+      total_tokens: 1000,
+      input_tokens: 500,
+      output_tokens: 500,
+      cache_read_tokens: 0,
+      cache_creation_tokens: 0,
+      context_tokens: 99000,
+      cost_usd: 0.1,
+      duration_ms: 10000,
+      mod_time: new Date().toISOString(),
+      size_bytes: 0,
+    },
+    bookmarked_at: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
 describe("SessionPicker", () => {
+  beforeEach(() => {
+    vi.mocked(listBookmarks).mockResolvedValue([]);
+  });
+
+  it("shows a pinned session live when its JSONL is present", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Frozen name" }),
+    ]);
+    const sessions = [makeSession({ session_id: "session1", name: "Live name" })];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    // Live name wins over the frozen label.
+    expect(screen.getAllByText("Live name").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Frozen name")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the frozen snapshot with disabled actions when the JSONL is gone", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "gone", label: "Frozen", recap: "R" }),
+    ]);
+    render(
+      <SessionPicker
+        sessions={[]}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText("Frozen")).toBeInTheDocument());
+    const row = screen.getByText("Frozen").closest(".session-row--unavailable");
+    expect(row).not.toBeNull();
+    const detailBtn = row!.querySelector(".message__detail-btn") as HTMLButtonElement | null;
+    expect(detailBtn).not.toBeNull();
+    expect(detailBtn!.disabled).toBe(true);
+  });
+
   it("shows loading spinner when loading", () => {
     render(
       <SessionPicker
