@@ -106,6 +106,9 @@ fn run_desktop(args: &[String]) {
             commands::wsl::list_wsl_distros,
             commands::wsl::set_wsl_distros,
             commands::terminal::focus_session_window,
+            commands::bookmarks::list_bookmarks,
+            commands::bookmarks::add_bookmark,
+            commands::bookmarks::remove_bookmark,
             switch_to_browser,
         ])
         .setup(move |app| {

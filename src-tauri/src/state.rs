@@ -61,6 +61,10 @@ pub struct AppState {
     pub picker_watcher: Mutex<Option<WatcherHandle>>,
     pub session_cache: Mutex<SessionCache>,
     pub settings: Mutex<Settings>,
+    /// Bookmarked sessions, loaded from disk at startup. Every write goes
+    /// through this mutex then `bookmarks::save_bookmarks`, from both the
+    /// Tauri command surface and the HTTP API.
+    pub bookmarks: Mutex<Vec<crate::bookmarks::Bookmark>>,
     /// Ongoing status reported by the session watcher for the currently viewed session.
     /// (session_path, is_ongoing) — kept in sync by the session watcher loop.
     pub watched_session_ongoing: Mutex<Option<(String, bool)>>,
@@ -91,6 +95,7 @@ impl AppState {
             picker_watcher: Mutex::new(None),
             session_cache: Mutex::new(SessionCache::new()),
             settings: Mutex::new(crate::settings::load_settings()),
+            bookmarks: Mutex::new(crate::bookmarks::load_bookmarks()),
             watched_session_ongoing: Mutex::new(None),
             event_tx,
             sessions_cache: Mutex::new(None),

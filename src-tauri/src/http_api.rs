@@ -3,10 +3,10 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::response::sse::{Event, KeepAlive, Sse};
 use axum::response::{IntoResponse, Json, Response};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::Router;
 use serde::Deserialize;
 use tokio_stream::wrappers::BroadcastStream;
@@ -88,6 +88,11 @@ async fn run_server(state: Arc<HttpState>) {
     let mut router = Router::new()
         .route("/api/settings", get(api_get_settings))
         .route("/api/settings/dir", post(api_set_projects_dir))
+        .route(
+            "/api/bookmarks",
+            get(api_list_bookmarks).post(api_add_bookmark),
+        )
+        .route("/api/bookmarks/{session_id}", delete(api_remove_bookmark))
         .route(
             "/api/wsl/distros",
             get(api_list_wsl_distros).post(api_set_wsl_distros),
@@ -200,6 +205,55 @@ async fn api_set_projects_dir(
         return err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e);
     }
     ok_json(&crate::commands::settings::build_response_pub(&guard))
+}
+
+// ---------------------------------------------------------------------------
+// Bookmarks
+// ---------------------------------------------------------------------------
+
+async fn api_list_bookmarks(State(state): State<Arc<HttpState>>) -> Response {
+    let app_state = app_state(&state);
+    let guard = match app_state.bookmarks.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            return err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        }
+    };
+    ok_json(&guard.clone())
+}
+
+async fn api_add_bookmark(
+    State(state): State<Arc<HttpState>>,
+    Json(bookmark): Json<crate::bookmarks::Bookmark>,
+) -> Response {
+    let app_state = app_state(&state);
+    let mut guard = match app_state.bookmarks.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            return err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        }
+    };
+    match crate::commands::bookmarks::apply_add(&mut guard, bookmark) {
+        Ok(list) => ok_json(&list),
+        Err(e) => err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e),
+    }
+}
+
+async fn api_remove_bookmark(
+    State(state): State<Arc<HttpState>>,
+    Path(session_id): Path<String>,
+) -> Response {
+    let app_state = app_state(&state);
+    let mut guard = match app_state.bookmarks.lock() {
+        Ok(g) => g,
+        Err(e) => {
+            return err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        }
+    };
+    match crate::commands::bookmarks::apply_remove(&mut guard, &session_id) {
+        Ok(list) => ok_json(&list),
+        Err(e) => err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e),
+    }
 }
 
 // ---------------------------------------------------------------------------
