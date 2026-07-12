@@ -108,9 +108,21 @@ async fn run_server(state: Arc<HttpState>) {
         .route("/api/events", get(api_events));
 
     if let Some(dir) = resolve_static_dir() {
+        // Headless/Docker deployments serve the frontend bundle from disk via
+        // `CCTRACE_STATIC_DIR`. This always takes precedence over the
+        // desktop asset-resolver fallback below.
         let serve = ServeDir::new(&dir).append_index_html_on_directories(true);
         router = router.fallback_service(serve);
         eprintln!("HTTP API: serving static assets from {dir}");
+    } else {
+        #[cfg(feature = "desktop")]
+        if state.app.is_some() {
+            // Desktop app: serve the frontend bundle embedded in the binary
+            // over HTTP, so "Open in Browser" (and any other client of this
+            // port) gets a real UI instead of just the `/api/*` routes.
+            router = router.fallback(asset_fallback);
+            eprintln!("HTTP API: serving embedded frontend via Tauri asset resolver");
+        }
     }
 
     let router = router.layer(CorsLayer::permissive()).with_state(state);
@@ -571,6 +583,45 @@ async fn api_focus_session_window(Json(body): Json<FocusBody>) -> Response {
 // ---------------------------------------------------------------------------
 // SSE events
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Embedded frontend (desktop mode)
+// ---------------------------------------------------------------------------
+
+/// Serve the frontend bundle embedded in the desktop binary via Tauri's
+/// asset resolver, as the fallback for any non-`/api/*` route.
+///
+/// This is what makes the HTTP API's own port a real substitute for the dev
+/// server: in a packaged build there is no Vite dev server to point a
+/// browser at, so "Open in Browser" needs this route to serve `index.html`
+/// and the JS/CSS bundle. `AssetResolver::get` already maps `/` to
+/// `index.html` and falls back to it for unknown paths, so no separate SPA
+/// routing is needed here.
+#[cfg(feature = "desktop")]
+async fn asset_fallback(State(state): State<Arc<HttpState>>, uri: axum::http::Uri) -> Response {
+    let Some(app) = &state.app else {
+        return err_response(axum::http::StatusCode::NOT_FOUND, "not found".to_string());
+    };
+
+    match app.asset_resolver().get(uri.path().to_string()) {
+        Some(asset) => {
+            let mut builder = axum::http::Response::builder()
+                .status(axum::http::StatusCode::OK)
+                .header(
+                    axum::http::header::CONTENT_TYPE,
+                    asset.mime_type().to_string(),
+                );
+            if let Some(csp) = &asset.csp_header {
+                builder = builder.header(axum::http::header::CONTENT_SECURITY_POLICY, csp);
+            }
+            builder
+                .body(axum::body::Body::from(asset.bytes().to_vec()))
+                .expect("building a static asset response cannot fail")
+                .into_response()
+        }
+        None => err_response(axum::http::StatusCode::NOT_FOUND, "not found".to_string()),
+    }
+}
 
 async fn api_events(
     State(state): State<Arc<HttpState>>,
