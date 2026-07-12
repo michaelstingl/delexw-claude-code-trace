@@ -181,3 +181,9 @@ export interface DebugEntry {
 }
 
 export type ViewState = "picker" | "list" | "detail" | "team" | "debug";
+
+export interface VersionInfo {
+  version: string;
+  commit: string;
+  dirty: boolean;
+}
