@@ -8,6 +8,7 @@ mod process;
 mod session_load;
 mod settings;
 mod state;
+mod version;
 mod watcher;
 mod wsl;
 
