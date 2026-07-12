@@ -13,6 +13,7 @@ import { getModelColor } from "../lib/theme";
 import { BsClaude } from "react-icons/bs";
 import { VscStarFull } from "react-icons/vsc";
 import { ForwardIcon, CostIcon } from "./Icons";
+import { OngoingDots } from "./OngoingDots";
 
 interface PinnedGroupProps {
   bookmarks: Bookmark[];
@@ -77,6 +78,12 @@ function LivePinnedRow({
         >
           {truncate(session.name || session.first_message || session.session_id, 80)}
         </span>
+        {session.is_ongoing && (
+          <span className="picker__session-ongoing">
+            <OngoingDots count={1} />
+            ACTIVE
+          </span>
+        )}
         <button
           className="message__detail-btn"
           onClick={(e) => {

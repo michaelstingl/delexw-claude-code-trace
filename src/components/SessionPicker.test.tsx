@@ -124,6 +124,28 @@ describe("SessionPicker", () => {
     expect(screen.queryByText("Frozen name")).not.toBeInTheDocument();
   });
 
+  it("keeps the ACTIVE label on a pinned session that is still ongoing", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Frozen name" }),
+    ]);
+    const sessions = [makeSession({ session_id: "session1", name: "Live name", is_ongoing: true })];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    // The pinned (deduped-from-the-normal-list) row must still show ACTIVE.
+    const pinned = document.querySelector(".picker__session--pinned");
+    expect(pinned?.querySelector(".picker__session-ongoing")).not.toBeNull();
+    expect(pinned).toHaveTextContent("ACTIVE");
+  });
+
   it("does not duplicate a pinned session in the normal date-group list", async () => {
     vi.mocked(listBookmarks).mockResolvedValue([
       makeBookmark({ session_id: "session1", label: "Frozen name" }),
