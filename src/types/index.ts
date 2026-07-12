@@ -16,4 +16,6 @@ export type {
   GitInfo,
   DebugEntry,
   ViewState,
+  Bookmark,
+  BookmarkMeta,
 } from "../../shared/types";

@@ -13,7 +13,7 @@ import { API_BASE } from "./config";
 // ---------------------------------------------------------------------------
 
 interface Route {
-  method?: "POST";
+  method?: "POST" | "DELETE";
   path: string | ((args: Record<string, unknown>) => string);
   body?: (args: Record<string, unknown>) => unknown;
 }
@@ -79,6 +79,16 @@ const routes: Record<string, Route> = {
     method: "POST",
     path: "/api/focus",
     body: (a) => ({ sessionId: a.sessionId }),
+  },
+  list_bookmarks: { path: "/api/bookmarks" },
+  add_bookmark: {
+    method: "POST",
+    path: "/api/bookmarks",
+    body: (a) => ({ bookmark: a.bookmark }),
+  },
+  remove_bookmark: {
+    method: "DELETE",
+    path: (a) => `/api/bookmarks/${encodeURIComponent(String(a.sessionId ?? ""))}`,
   },
 };
 
