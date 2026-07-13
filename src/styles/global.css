@@ -1138,7 +1138,12 @@ body {
 }
 
 .picker__recap-label {
-  color: var(--text-dim);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.picker__recap-label__stale {
+  color: var(--context-warn);
 }
 
 .picker__session-subtitle {

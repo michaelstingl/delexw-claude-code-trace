@@ -1,6 +1,5 @@
 import type { SessionInfo, Bookmark } from "../types";
 import { BookmarkStar } from "./BookmarkStar";
-import { addBookmark } from "../lib/bookmarks";
 import {
   formatTokens,
   formatDuration,
@@ -14,12 +13,15 @@ import { BsClaude } from "react-icons/bs";
 import { VscStarFull } from "react-icons/vsc";
 import { ForwardIcon, CostIcon } from "./Icons";
 import { OngoingDots } from "./OngoingDots";
+import { DEFAULT_PICKER_FIELDS, type PickerField } from "../lib/pickerFields";
 
 interface PinnedGroupProps {
   bookmarks: Bookmark[];
   sessions: SessionInfo[];
   onSelect: (session: SessionInfo) => void;
   onBookmarksChange: (list: Bookmark[]) => void;
+  /** Which per-session detail fields to show in the meta line. Defaults to all on. */
+  pickerFields?: Record<PickerField, boolean>;
 }
 
 /** Renders the "★ Pinned" group above the normal session list. Each bookmark is
@@ -32,6 +34,7 @@ export function PinnedGroup({
   sessions,
   onSelect,
   onBookmarksChange,
+  pickerFields = DEFAULT_PICKER_FIELDS,
 }: PinnedGroupProps) {
   if (bookmarks.length === 0) return null;
 
@@ -44,11 +47,17 @@ export function PinnedGroup({
           <LivePinnedRow
             key={bookmark.session_id}
             session={live}
+            bookmark={bookmark}
             onSelect={onSelect}
             onBookmarksChange={onBookmarksChange}
+            pickerFields={pickerFields}
           />
         ) : (
-          <FrozenPinnedRow key={bookmark.session_id} bookmark={bookmark} />
+          <FrozenPinnedRow
+            key={bookmark.session_id}
+            bookmark={bookmark}
+            pickerFields={pickerFields}
+          />
         );
       })}
     </div>
@@ -57,15 +66,23 @@ export function PinnedGroup({
 
 function LivePinnedRow({
   session,
+  bookmark,
   onSelect,
   onBookmarksChange,
+  pickerFields,
 }: {
   session: SessionInfo;
+  bookmark: Bookmark;
   onSelect: (session: SessionInfo) => void;
   onBookmarksChange: (list: Bookmark[]) => void;
+  pickerFields: Record<PickerField, boolean>;
 }) {
   const model = shortModel(session.model);
   const modelClr = getModelColor(session.model);
+  const displayName = session.name || bookmark.label || session.first_message || session.session_id;
+  const liveRecap = session.recap && session.recap.length > 0 ? session.recap : null;
+  const recap = liveRecap ?? bookmark.recap;
+  const ageTurns = liveRecap === null ? session.turn_count - bookmark.meta.recap_turn : 0;
   return (
     <div className="picker__session picker__session--pinned" onClick={() => onSelect(session)}>
       <div className="picker__session-top">
@@ -76,7 +93,7 @@ function LivePinnedRow({
         <span
           className={`picker__session-preview${session.name ? " picker__session-preview--named" : ""}`}
         >
-          {truncate(session.name || session.first_message || session.session_id, 80)}
+          {truncate(displayName, 80)}
         </span>
         {session.is_ongoing && (
           <span className="picker__session-ongoing">
@@ -93,39 +110,40 @@ function LivePinnedRow({
         >
           Detail <ForwardIcon />
         </button>
-        <button
-          className="session-row__update"
-          onClick={async (e) => {
-            e.stopPropagation();
-            onBookmarksChange(await addBookmark(session));
-          }}
-          title="Re-freeze this bookmark from the current session"
-        >
-          Update snapshot
-        </button>
       </div>
-      {session.recap && (
+      {recap && (
         <div className="picker__session-subtitle picker__session-subtitle--recap">
-          <span className="picker__recap-label">Recap:</span> {session.recap}
+          <span className="picker__recap-label">
+            Recap
+            {ageTurns > 0 && (
+              <span className="picker__recap-label__stale">{` · +${ageTurns} turns ago`}</span>
+            )}
+            :
+          </span>{" "}
+          {recap}
         </div>
       )}
       <div className="picker__session-meta">
-        <span className="picker__session-model" style={{ color: modelClr }}>
-          {model}
-        </span>
-        <span className="picker__session-stat">{session.turn_count} turns</span>
-        {session.total_tokens > 0 && (
-          <span className="picker__session-stat">{formatTokens(session.total_tokens)} tok</span>
+        {pickerFields.model && (
+          <span className="picker__session-model" style={{ color: modelClr }}>
+            {model}
+          </span>
         )}
-        {session.context_tokens > 0 && (
+        {pickerFields.turns && (
+          <span className="picker__session-stat">{session.turn_count} turns</span>
+        )}
+        {pickerFields.ctx && session.context_tokens > 0 && (
           <span className="picker__session-stat">ctx {formatTokens(session.context_tokens)}</span>
         )}
-        {session.cost_usd > 0 && (
+        {pickerFields.tok && session.total_tokens > 0 && (
+          <span className="picker__session-stat">{formatTokens(session.total_tokens)} tok</span>
+        )}
+        {pickerFields.cost && session.cost_usd > 0 && (
           <span className="picker__session-stat picker__session-stat--cost">
             <CostIcon /> {formatCost(session.cost_usd)}
           </span>
         )}
-        {session.duration_ms > 0 && (
+        {pickerFields.duration && session.duration_ms > 0 && (
           <span className="picker__session-stat">{formatDuration(session.duration_ms)}</span>
         )}
         {session.mod_time && (
@@ -140,7 +158,13 @@ function LivePinnedRow({
  *  the frozen snapshot (label/recap/meta) instead of live data, and its actions
  *  (Detail, the bookmark star) are disabled since there is nothing to open or
  *  re-freeze — only the backend-driven removal in Task 7 can clear it. */
-function FrozenPinnedRow({ bookmark }: { bookmark: Bookmark }) {
+function FrozenPinnedRow({
+  bookmark,
+  pickerFields,
+}: {
+  bookmark: Bookmark;
+  pickerFields: Record<PickerField, boolean>;
+}) {
   const model = shortModel(bookmark.meta.model);
   const modelClr = getModelColor(bookmark.meta.model);
   return (
@@ -161,13 +185,6 @@ function FrozenPinnedRow({ bookmark }: { bookmark: Bookmark }) {
         <button className="message__detail-btn" disabled>
           Detail <ForwardIcon />
         </button>
-        <button
-          className="session-row__update"
-          disabled
-          title="Session unavailable — nothing to re-freeze"
-        >
-          Update snapshot
-        </button>
       </div>
       {bookmark.recap && (
         <div className="picker__session-subtitle picker__session-subtitle--recap">
@@ -175,26 +192,30 @@ function FrozenPinnedRow({ bookmark }: { bookmark: Bookmark }) {
         </div>
       )}
       <div className="picker__session-meta">
-        <span className="picker__session-model" style={{ color: modelClr }}>
-          {model}
-        </span>
-        <span className="picker__session-stat">{bookmark.meta.turn_count} turns</span>
-        {bookmark.meta.total_tokens > 0 && (
-          <span className="picker__session-stat">
-            {formatTokens(bookmark.meta.total_tokens)} tok
+        {pickerFields.model && (
+          <span className="picker__session-model" style={{ color: modelClr }}>
+            {model}
           </span>
         )}
-        {bookmark.meta.context_tokens > 0 && (
+        {pickerFields.turns && (
+          <span className="picker__session-stat">{bookmark.meta.turn_count} turns</span>
+        )}
+        {pickerFields.ctx && bookmark.meta.context_tokens > 0 && (
           <span className="picker__session-stat">
             ctx {formatTokens(bookmark.meta.context_tokens)}
           </span>
         )}
-        {bookmark.meta.cost_usd > 0 && (
+        {pickerFields.tok && bookmark.meta.total_tokens > 0 && (
+          <span className="picker__session-stat">
+            {formatTokens(bookmark.meta.total_tokens)} tok
+          </span>
+        )}
+        {pickerFields.cost && bookmark.meta.cost_usd > 0 && (
           <span className="picker__session-stat picker__session-stat--cost">
             <CostIcon /> {formatCost(bookmark.meta.cost_usd)}
           </span>
         )}
-        {bookmark.meta.duration_ms > 0 && (
+        {pickerFields.duration && bookmark.meta.duration_ms > 0 && (
           <span className="picker__session-stat">{formatDuration(bookmark.meta.duration_ms)}</span>
         )}
       </div>

@@ -14,6 +14,7 @@ export function freezeSnapshot(s: SessionInfo): Bookmark {
     meta: {
       model: s.model,
       turn_count: s.turn_count,
+      recap_turn: s.recap_turn,
       total_tokens: s.total_tokens,
       input_tokens: s.input_tokens,
       output_tokens: s.output_tokens,

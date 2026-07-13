@@ -118,6 +118,7 @@ export interface SessionInfo {
 export interface BookmarkMeta {
   model: string;
   turn_count: number;
+  recap_turn: number;
   total_tokens: number;
   input_tokens: number;
   output_tokens: number;

@@ -153,6 +153,7 @@ export function SessionPicker({
             sessions={sessions}
             onSelect={onSelect}
             onBookmarksChange={setBookmarks}
+            pickerFields={pickerFields}
           />
         )}
 

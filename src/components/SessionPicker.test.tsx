@@ -11,7 +11,7 @@ vi.mock("../lib/bookmarks", () => ({
   isBookmarked: (list: Bookmark[], sessionId: string) =>
     list.some((b) => b.session_id === sessionId),
 }));
-import { listBookmarks, addBookmark } from "../lib/bookmarks";
+import { listBookmarks } from "../lib/bookmarks";
 
 type IOCallback = (entries: IntersectionObserverEntry[], observer: IntersectionObserver) => void;
 
@@ -83,6 +83,7 @@ function makeBookmark(overrides: Partial<Bookmark> = {}): Bookmark {
     meta: {
       model: "claude-sonnet-4-20250514",
       turn_count: 3,
+      recap_turn: 3,
       total_tokens: 1000,
       input_tokens: 500,
       output_tokens: 500,
@@ -173,7 +174,7 @@ describe("SessionPicker", () => {
     expect(screen.queryByText("Today")).not.toBeInTheDocument();
   });
 
-  it("re-freezes via addBookmark when Update snapshot is clicked (live present)", async () => {
+  it("does not render an Update snapshot button on a live pinned row", async () => {
     vi.mocked(listBookmarks).mockResolvedValue([
       makeBookmark({ session_id: "session1", label: "Frozen name" }),
     ]);
@@ -189,13 +190,10 @@ describe("SessionPicker", () => {
       />,
     );
     await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
-    const updateBtn = screen.getByRole("button", { name: /update snapshot/i });
-    expect(updateBtn).not.toBeDisabled();
-    fireEvent.click(updateBtn);
-    await waitFor(() => expect(addBookmark).toHaveBeenCalledWith(sessions[0]));
+    expect(screen.queryByRole("button", { name: /update snapshot/i })).not.toBeInTheDocument();
   });
 
-  it("disables Update snapshot when the session is unavailable", async () => {
+  it("does not render an Update snapshot button on a frozen (unavailable) pinned row", async () => {
     vi.mocked(listBookmarks).mockResolvedValue([
       makeBookmark({ session_id: "gone", label: "Frozen", recap: "R" }),
     ]);
@@ -210,8 +208,133 @@ describe("SessionPicker", () => {
       />,
     );
     await waitFor(() => expect(screen.getByText("Frozen")).toBeInTheDocument());
-    const updateBtn = screen.getByRole("button", { name: /update snapshot/i });
-    expect(updateBtn).toBeDisabled();
+    expect(screen.queryByRole("button", { name: /update snapshot/i })).not.toBeInTheDocument();
+  });
+
+  it("pinned row: recap has no age marker when the live session still has a recap", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Frozen name", recap: "old recap" }),
+    ]);
+    const sessions = [
+      makeSession({ session_id: "session1", name: "Live name", recap: "R", turn_count: 30 }),
+    ];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    const label = document.querySelector(".picker__session--pinned .picker__recap-label")!;
+    expect(label.textContent).toBe("Recap:");
+    expect(label.querySelector(".picker__recap-label__stale")).toBeNull();
+  });
+
+  it("pinned row: shows a stale age marker and the frozen recap when the live session has no recap", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({
+        session_id: "session1",
+        label: "Frozen name",
+        recap: "R",
+        meta: { ...makeBookmark().meta, recap_turn: 18 },
+      }),
+    ]);
+    const sessions = [
+      makeSession({ session_id: "session1", name: "Live name", recap: null, turn_count: 30 }),
+    ];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    const label = document.querySelector(".picker__session--pinned .picker__recap-label")!;
+    expect(label.textContent).toBe("Recap · +12 turns ago:");
+    const stale = label.querySelector(".picker__recap-label__stale")!;
+    expect(stale.textContent).toBe(" · +12 turns ago");
+  });
+
+  it("pinned row: falls back to the bookmark label when the session has no name", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Pinned name" }),
+    ]);
+    const sessions = [makeSession({ session_id: "session1", name: null, first_message: "fm" })];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(document.querySelector(".picker__session--pinned")).not.toBeNull());
+    const pinned = document.querySelector(".picker__session--pinned")!;
+    expect(pinned).toHaveTextContent("Pinned name");
+    expect(pinned).not.toHaveTextContent("fm");
+  });
+
+  it("pinned row: honors pickerFields toggles (tok stat hidden when off, shown when on)", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({ session_id: "session1", label: "Frozen name" }),
+    ]);
+    const sessions = [
+      makeSession({ session_id: "session1", name: "Live name", total_tokens: 2000 }),
+    ];
+    const { rerender } = render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+        pickerFields={{
+          model: true,
+          turns: true,
+          ctx: true,
+          tok: false,
+          cost: true,
+          duration: true,
+          totals: true,
+        }}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    expect(document.querySelector(".picker__session--pinned")!.textContent).not.toContain("tok");
+
+    rerender(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+        pickerFields={{
+          model: true,
+          turns: true,
+          ctx: true,
+          tok: true,
+          cost: true,
+          duration: true,
+          totals: true,
+        }}
+      />,
+    );
+    await waitFor(() =>
+      expect(document.querySelector(".picker__session--pinned")!.textContent).toContain("tok"),
+    );
   });
 
   it("falls back to the frozen snapshot with disabled actions when the JSONL is gone", async () => {
