@@ -28,8 +28,8 @@ describe("freezeSnapshot", () => {
   it("prefers the /rename name for the label", () => {
     expect(freezeSnapshot(base({ name: "My run" })).label).toBe("My run");
   });
-  it("falls back to recap then first_message when unnamed", () => {
-    expect(freezeSnapshot(base({ name: null, recap: "did X" })).label).toBe("did X");
+  it("falls back to first_message when unnamed, ignoring recap", () => {
+    expect(freezeSnapshot(base({ name: null, recap: "did X" })).label).toBe("first");
     expect(freezeSnapshot(base({ name: null, recap: null })).label).toBe("first");
   });
   it("freezes context_tokens and recap into the snapshot", () => {

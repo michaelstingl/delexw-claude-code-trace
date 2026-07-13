@@ -2,11 +2,11 @@ import { invoke } from "./invoke";
 import type { SessionInfo, Bookmark } from "../types";
 
 /** Freezes the current state of a session into a `Bookmark` snapshot.
- * Label prefers the /rename name, then the recap, then the first message,
- * falling back to the session id. */
+ * Label prefers the /rename name, then the first message, falling back to
+ * the session id. The recap is stored separately on `bookmark.recap` and is
+ * never used as the label to avoid duplicating it as the row title. */
 export function freezeSnapshot(s: SessionInfo): Bookmark {
-  const label =
-    (s.name && s.name.trim()) || (s.recap && s.recap.trim()) || s.first_message || s.session_id;
+  const label = (s.name && s.name.trim()) || s.first_message || s.session_id;
   return {
     session_id: s.session_id,
     label,
