@@ -22,6 +22,10 @@ pub struct SessionInfo {
     /// (`away_summary`); `None` otherwise. Surfaced as an optional, richer picker
     /// preview. Derived in `scan_session_metadata`; see `recap_from_entry`.
     pub recap: Option<String>,
+    /// `turn_count` as of the most recent `away_summary` entry (0 if the session
+    /// has no recap). Used to detect whether the recap is fresh (no turns since
+    /// it was written) or stale.
+    pub recap_turn: i32,
     /// User-assigned session name (Claude Code `/rename`), joined from the
     /// `~/.claude/sessions/*.json` registry. `None` when the session was never
     /// named or has no entry in the registry. The registry is pid-keyed and
@@ -491,6 +495,7 @@ pub fn discover_project_sessions(project_dir: &str) -> Result<Vec<SessionInfo>, 
             mod_time,
             first_message: meta.first_msg,
             recap: meta.recap,
+            recap_turn: meta.recap_turn,
             name: None,
             liveness: None,
             turn_count: meta.turn_count,
@@ -812,6 +817,7 @@ pub fn session_info_from_metadata(
         mod_time: mod_time_chrono,
         first_message: meta.first_msg,
         recap: meta.recap,
+        recap_turn: meta.recap_turn,
         name: None,
         liveness: None,
         turn_count: meta.turn_count,
@@ -890,6 +896,7 @@ pub(crate) struct SessionMetadata {
     pub(crate) git_branch: String,
     pub(crate) permission_mode: String,
     pub(crate) recap: Option<String>,
+    pub(crate) recap_turn: i32,
 }
 
 impl Default for SessionMetadata {
@@ -911,6 +918,7 @@ impl Default for SessionMetadata {
             git_branch: String::new(),
             permission_mode: String::new(),
             recap: None,
+            recap_turn: 0,
         }
     }
 }
@@ -1015,6 +1023,7 @@ pub(crate) fn scan_session_metadata(path: &str) -> SessionMetadata {
         // survives it. See `is_resuming_user_turn` for the excluded cases.
         if let Some(text) = recap_from_entry(&raw) {
             meta.recap = Some(text);
+            meta.recap_turn = meta.turn_count;
         } else if is_resuming_user_turn(&raw) {
             meta.recap = None;
         }
@@ -1764,6 +1773,7 @@ mod tests {
             mod_time: Utc::now(),
             first_message: "first".to_string(),
             recap: None,
+            recap_turn: 0,
             name: None,
             liveness: None,
             turn_count: 0,
@@ -1906,6 +1916,38 @@ mod tests {
             scan_session_metadata(p.to_str().unwrap()).recap.as_deref(),
             Some("Parked cleanly.")
         );
+    }
+
+    #[test]
+    fn scan_recap_turn_is_turn_count_as_of_the_recap() {
+        // One user/assistant pair (turn_count == 2) before the away_summary — the
+        // recap's own turn position is captured, not the count after further turns.
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("s.jsonl");
+        std::fs::write(
+            &p,
+            concat!(
+                "{\"type\":\"user\",\"uuid\":\"u1\",\"message\":{\"role\":\"user\",\"content\":\"hi\"}}\n",
+                "{\"type\":\"assistant\",\"uuid\":\"a1\",\"message\":{\"role\":\"assistant\",\"content\":[]}}\n",
+                "{\"type\":\"system\",\"subtype\":\"away_summary\",\"content\":\"Hiring decision.\"}\n",
+            ),
+        )
+        .unwrap();
+        let meta = scan_session_metadata(p.to_str().unwrap());
+        assert_eq!(meta.turn_count, 2);
+        assert_eq!(meta.recap_turn, 2);
+    }
+
+    #[test]
+    fn scan_recap_turn_is_zero_when_no_recap() {
+        let dir = tempfile::tempdir().unwrap();
+        let p = dir.path().join("s.jsonl");
+        std::fs::write(
+            &p,
+            "{\"type\":\"user\",\"message\":{\"role\":\"user\",\"content\":\"hi\"}}\n",
+        )
+        .unwrap();
+        assert_eq!(scan_session_metadata(p.to_str().unwrap()).recap_turn, 0);
     }
 
     #[test]

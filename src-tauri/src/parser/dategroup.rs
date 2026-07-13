@@ -82,6 +82,7 @@ mod tests {
             path: "/tmp/test.jsonl".to_string(),
             first_message: "test".to_string(),
             recap: None,
+            recap_turn: 0,
             name: None,
             liveness: None,
             mod_time,

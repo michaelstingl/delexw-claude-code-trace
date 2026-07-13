@@ -87,6 +87,8 @@ export interface SessionInfo {
   first_message: string;
   /** Claude Code's end-of-session recap, when it is the session's latest entry; null otherwise. */
   recap: string | null;
+  /** `turn_count` as of the most recent recap (0 if the session has no recap). */
+  recap_turn: number;
   /** User-assigned session name (Claude Code `/rename`), joined from the live
    *  session registry. `null` when never named or no longer running. */
   name?: string | null;

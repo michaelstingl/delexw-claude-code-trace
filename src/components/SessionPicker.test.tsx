@@ -56,6 +56,7 @@ function makeSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
     mod_time: new Date().toISOString(),
     first_message: "Hello world",
     recap: null,
+    recap_turn: 0,
     turn_count: 5,
     is_ongoing: false,
     total_tokens: 2000,
