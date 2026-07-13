@@ -29,6 +29,7 @@ function makeSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
     output_tokens: 500,
     cache_read_tokens: 0,
     cache_creation_tokens: 0,
+    context_tokens: 0,
     cost_usd: 0.01,
     duration_ms: 5000,
     model: "claude-sonnet-4-20250514",

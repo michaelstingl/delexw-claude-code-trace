@@ -54,6 +54,7 @@ function makeSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
     output_tokens: 1000,
     cache_read_tokens: 0,
     cache_creation_tokens: 0,
+    context_tokens: 0,
     cost_usd: 0.05,
     duration_ms: 30000,
     model: "claude-sonnet-4-20250514",
@@ -458,6 +459,7 @@ describe("SessionPicker", () => {
           pickerFields={{
             model: true,
             turns: true,
+            ctx: true,
             tok: true,
             cost: false,
             duration: true,
@@ -467,6 +469,51 @@ describe("SessionPicker", () => {
       );
       expect(document.querySelector(".picker__session-stat--cost")).not.toBeInTheDocument();
       expect(screen.getByText(/5 turns/)).toBeInTheDocument();
+    });
+
+    it("hides the ctx stat when the ctx field is off, and shows it when on", () => {
+      const sessions = [makeSession({ context_tokens: 12345 })];
+      const { rerender } = render(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+          pickerFields={{
+            model: true,
+            turns: true,
+            ctx: false,
+            tok: true,
+            cost: true,
+            duration: true,
+            totals: true,
+          }}
+        />,
+      );
+      expect(screen.queryByText(/ctx /)).not.toBeInTheDocument();
+
+      rerender(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+          pickerFields={{
+            model: true,
+            turns: true,
+            ctx: true,
+            tok: true,
+            cost: true,
+            duration: true,
+            totals: true,
+          }}
+        />,
+      );
+      expect(screen.getByText(/ctx /)).toBeInTheDocument();
     });
 
     it("hides the header totals when the totals field is off", () => {
@@ -482,6 +529,7 @@ describe("SessionPicker", () => {
           pickerFields={{
             model: true,
             turns: true,
+            ctx: true,
             tok: true,
             cost: true,
             duration: true,

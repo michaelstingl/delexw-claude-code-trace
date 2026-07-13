@@ -101,6 +101,10 @@ export interface SessionInfo {
   output_tokens: number;
   cache_read_tokens: number;
   cache_creation_tokens: number;
+  /** Context-window occupancy of the last complete main-context assistant turn
+   *  (`input + cache_read + cache_creation`), NOT a cumulative sum like the
+   *  `*_tokens` fields above. */
+  context_tokens: number;
   cost_usd: number;
   duration_ms: number;
   model: string;

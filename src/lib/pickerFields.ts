@@ -7,11 +7,12 @@
  *  `DEFAULT_PICKER_FIELDS`. `loadPickerFields` merges the stored value over
  *  the defaults, so existing users automatically get the new field turned on
  *  without needing a migration. */
-export type PickerField = "model" | "turns" | "tok" | "cost" | "duration" | "totals";
+export type PickerField = "model" | "turns" | "ctx" | "tok" | "cost" | "duration" | "totals";
 
 export const PICKER_FIELDS: { id: PickerField; label: string }[] = [
   { id: "model", label: "Model" },
   { id: "turns", label: "Turns" },
+  { id: "ctx", label: "Context size" },
   { id: "tok", label: "Token usage" },
   { id: "cost", label: "Cost" },
   { id: "duration", label: "Duration" },
@@ -21,6 +22,7 @@ export const PICKER_FIELDS: { id: PickerField; label: string }[] = [
 export const DEFAULT_PICKER_FIELDS: Record<PickerField, boolean> = {
   model: true,
   turns: true,
+  ctx: true,
   tok: true,
   cost: true,
   duration: true,

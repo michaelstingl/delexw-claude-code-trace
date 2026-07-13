@@ -26,7 +26,7 @@ describe("pickerFields", () => {
   });
 
   it("ignores an unknown stored key (harmless, future-proof)", () => {
-    localStorage.setItem(PICKER_FIELDS_KEY, JSON.stringify({ ctx: false, notAField: true }));
+    localStorage.setItem(PICKER_FIELDS_KEY, JSON.stringify({ notAField: true }));
     const loaded = loadPickerFields();
     expect(loaded).toMatchObject(DEFAULT_PICKER_FIELDS);
   });
