@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { invoke } from "../lib/invoke";
 import { PopoutModal } from "./PopoutModal";
 import { FONT_SCALE_PRESETS, formatFontScale } from "../lib/fontScale";
+import { PICKER_FIELDS, type PickerField } from "../lib/pickerFields";
 
 interface SettingsResponse {
   projects_dir: string | null;
@@ -22,6 +23,10 @@ interface SettingsModalProps {
   recapPreview: boolean;
   /** Toggle recap preview (persisted by the caller). */
   onRecapPreviewChange: (on: boolean) => void;
+  /** Which per-session detail fields show in the session picker. */
+  pickerFields: Record<PickerField, boolean>;
+  /** Toggle a picker field's visibility (persisted by the caller). */
+  onPickerFieldsChange: (fields: Record<PickerField, boolean>) => void;
 }
 
 /** Merge detected distros with already-configured ones so configured-but-offline
@@ -38,6 +43,8 @@ export function SettingsModal({
   onFontScaleChange,
   recapPreview,
   onRecapPreviewChange,
+  pickerFields,
+  onPickerFieldsChange,
 }: SettingsModalProps) {
   const [projectsDir, setProjectsDir] = useState("");
   const [defaultDir, setDefaultDir] = useState("");
@@ -129,6 +136,13 @@ export function SettingsModal({
   );
 
   const distros = mergeDistros(availableDistros, [...selectedDistros]);
+
+  const togglePickerField = useCallback(
+    (id: PickerField) => {
+      onPickerFieldsChange({ ...pickerFields, [id]: !pickerFields[id] });
+    },
+    [pickerFields, onPickerFieldsChange],
+  );
 
   return (
     <PopoutModal
@@ -232,6 +246,23 @@ export function SettingsModal({
           <span className="settings-modal__toggle-knob" />
           <span className="settings-modal__toggle-label">{recapPreview ? "On" : "Off"}</span>
         </button>
+
+        <label className="settings-modal__label settings-modal__label--section">
+          Session fields
+        </label>
+        <p className="settings-modal__hint">Choose which details show for each session.</p>
+        <div className="settings-modal__wsl">
+          {PICKER_FIELDS.map(({ id, label }) => (
+            <label key={id} className="settings-modal__wsl-item">
+              <input
+                type="checkbox"
+                checked={pickerFields[id]}
+                onChange={() => togglePickerField(id)}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
 
         {error && <p className="settings-modal__error">{error}</p>}
         <div className="settings-modal__actions">

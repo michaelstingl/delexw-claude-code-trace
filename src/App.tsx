@@ -8,6 +8,7 @@ import { useKeyboard } from "./hooks/useKeyboard";
 import { useViewActionsRef, useViewActionCallbacks } from "./hooks/useViewActions";
 import { useFontScale } from "./hooks/useFontScale";
 import { useRecapPreview } from "./hooks/useRecapPreview";
+import { usePickerFields } from "./hooks/usePickerFields";
 import { SessionPicker } from "./components/SessionPicker";
 import { MessageList } from "./components/MessageList";
 import { MessageDetail } from "./components/MessageDetail";
@@ -39,6 +40,7 @@ export function App() {
   const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set());
   const [fontScale, setFontScale] = useFontScale();
   const [recapPreview, setRecapPreview] = useRecapPreview();
+  const [pickerFields, setPickerFields] = usePickerFields();
   // Full (heavy-body) message for the detail view, fetched on demand since the
   // list only holds lightened messages.
   const [detailMessage, setDetailMessage] = useState<DisplayMessage | null>(null);
@@ -403,6 +405,7 @@ export function App() {
             onSelectIndex={setPickerSelectedIndex}
             onVisiblePathsChange={picker.refresh}
             recapPreview={recapPreview}
+            pickerFields={pickerFields}
             viewActionsRef={viewActionsRef}
           />
         );
@@ -544,6 +547,8 @@ export function App() {
           onFontScaleChange={setFontScale}
           recapPreview={recapPreview}
           onRecapPreviewChange={setRecapPreview}
+          pickerFields={pickerFields}
+          onPickerFieldsChange={setPickerFields}
         />
       )}
     </div>

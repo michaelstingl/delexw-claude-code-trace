@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { SettingsModal } from "./SettingsModal";
+import { DEFAULT_PICKER_FIELDS } from "../lib/pickerFields";
 
 const mockInvoke = vi.fn();
 vi.mock("../lib/invoke", () => ({
@@ -26,6 +27,7 @@ describe("SettingsModal", () => {
   const onSaved = vi.fn();
   const onFontScaleChange = vi.fn();
   const onRecapPreviewChange = vi.fn();
+  const onPickerFieldsChange = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -47,6 +49,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => {
@@ -66,6 +70,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => {
@@ -86,6 +92,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => {
@@ -106,6 +114,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => {
@@ -122,6 +132,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => expect(screen.getByText(`Default: ${DEFAULT_DIR}`)).toBeInTheDocument());
@@ -151,6 +163,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => expect(screen.getByDisplayValue("/custom/path")).toBeInTheDocument());
@@ -173,6 +187,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => {
@@ -194,6 +210,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
 
@@ -219,6 +237,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
 
@@ -244,6 +264,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => expect(screen.getByText(`Default: ${DEFAULT_DIR}`)).toBeInTheDocument());
@@ -268,6 +290,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     await waitFor(() => expect(screen.getByText(`Default: ${DEFAULT_DIR}`)).toBeInTheDocument());
@@ -292,9 +316,30 @@ describe("SettingsModal", () => {
         onFontScaleChange={() => {}}
         recapPreview={true}
         onRecapPreviewChange={onChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     fireEvent.click(screen.getByRole("switch", { name: /recap preview/i }));
     expect(onChange).toHaveBeenCalledWith(false);
+  });
+
+  it("toggles a session field via the SESSION FIELDS checkboxes", async () => {
+    const onChange = vi.fn();
+    render(
+      <SettingsModal
+        onClose={() => {}}
+        onSaved={() => {}}
+        fontScale={1}
+        onFontScaleChange={() => {}}
+        recapPreview={true}
+        onRecapPreviewChange={onRecapPreviewChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onChange}
+      />,
+    );
+    await waitFor(() => expect(screen.getByLabelText("Cost")).toBeInTheDocument());
+    fireEvent.click(screen.getByLabelText("Cost"));
+    expect(onChange).toHaveBeenCalledWith({ ...DEFAULT_PICKER_FIELDS, cost: false });
   });
 });

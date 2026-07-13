@@ -17,6 +17,7 @@ import { getModelColor } from "../lib/theme";
 import { mergeRefs } from "../lib/mergeRefs";
 import { BsClaude } from "react-icons/bs";
 import { TokensIcon, CostIcon, ForwardIcon } from "./Icons";
+import { DEFAULT_PICKER_FIELDS, type PickerField } from "../lib/pickerFields";
 
 interface SessionPickerProps {
   sessions: SessionInfo[];
@@ -38,6 +39,11 @@ interface SessionPickerProps {
    */
   recapPreview?: boolean;
   /**
+   * Which per-session detail fields to show in the meta line and header totals.
+   * Defaults to all fields on when not supplied (e.g. in isolated tests).
+   */
+  pickerFields?: Record<PickerField, boolean>;
+  /**
    * Shared toolbar-action registry. The picker registers Top/Bottom so they
    * scroll its own list; without it the toolbar's scroll buttons are inert here.
    */
@@ -54,6 +60,7 @@ export function SessionPicker({
   onSelectIndex,
   onVisiblePathsChange,
   recapPreview = false,
+  pickerFields = DEFAULT_PICKER_FIELDS,
   viewActionsRef,
 }: SessionPickerProps) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -90,12 +97,12 @@ export function SessionPicker({
       <div className="picker__header">
         <div className="picker__title">
           Sessions
-          {totalTokens > 0 && (
+          {pickerFields.totals && totalTokens > 0 && (
             <span className="picker__total-tokens">
               <TokensIcon /> {formatTokens(totalTokens)} tok
             </span>
           )}
-          {totalCost > 0 && (
+          {pickerFields.totals && totalCost > 0 && (
             <span className="picker__total-cost">
               <CostIcon /> {formatCost(totalCost)}
             </span>
@@ -179,21 +186,25 @@ export function SessionPicker({
                     </div>
                   ) : null}
                   <div className="picker__session-meta">
-                    <span className="picker__session-model" style={{ color: modelClr }}>
-                      {model}
-                    </span>
-                    <span className="picker__session-stat">{session.turn_count} turns</span>
-                    {session.total_tokens > 0 && (
+                    {pickerFields.model && (
+                      <span className="picker__session-model" style={{ color: modelClr }}>
+                        {model}
+                      </span>
+                    )}
+                    {pickerFields.turns && (
+                      <span className="picker__session-stat">{session.turn_count} turns</span>
+                    )}
+                    {pickerFields.tok && session.total_tokens > 0 && (
                       <span className="picker__session-stat">
                         {formatTokens(session.total_tokens)} tok
                       </span>
                     )}
-                    {sessionCost > 0 && (
+                    {pickerFields.cost && sessionCost > 0 && (
                       <span className="picker__session-stat picker__session-stat--cost">
                         <CostIcon /> {formatCost(sessionCost)}
                       </span>
                     )}
-                    {session.duration_ms > 0 && (
+                    {pickerFields.duration && session.duration_ms > 0 && (
                       <span className="picker__session-stat">
                         {formatDuration(session.duration_ms)}
                       </span>

@@ -443,4 +443,69 @@ describe("SessionPicker", () => {
       expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
     });
   });
+
+  describe("pickerFields", () => {
+    it("hides a field when off and keeps others when its pref is false", () => {
+      const sessions = [makeSession({ cost_usd: 1.23, duration_ms: 45000 })];
+      render(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+          pickerFields={{
+            model: true,
+            turns: true,
+            tok: true,
+            cost: false,
+            duration: true,
+            totals: true,
+          }}
+        />,
+      );
+      expect(document.querySelector(".picker__session-stat--cost")).not.toBeInTheDocument();
+      expect(screen.getByText(/5 turns/)).toBeInTheDocument();
+    });
+
+    it("hides the header totals when the totals field is off", () => {
+      const sessions = [makeSession({ total_tokens: 2000, cost_usd: 1.23 })];
+      render(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+          pickerFields={{
+            model: true,
+            turns: true,
+            tok: true,
+            cost: true,
+            duration: true,
+            totals: false,
+          }}
+        />,
+      );
+      expect(document.querySelector(".picker__total-tokens")).not.toBeInTheDocument();
+      expect(document.querySelector(".picker__total-cost")).not.toBeInTheDocument();
+    });
+
+    it("shows all fields by default when pickerFields is not supplied", () => {
+      const sessions = [makeSession({ cost_usd: 1.23 })];
+      render(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+        />,
+      );
+      expect(document.querySelector(".picker__session-stat--cost")).toBeInTheDocument();
+    });
+  });
 });
