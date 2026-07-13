@@ -146,16 +146,48 @@ fn run_desktop(args: &[String]) {
         .expect("error while running tauri application");
 }
 
-/// Open the web UI in the default browser and hide the desktop window.
+/// Build the URL "Open in Browser" should open for a given HTTP API bind
+/// address (host, port).
+fn browser_url(host: &str, port: u16) -> String {
+    format!("http://{host}:{port}")
+}
+
+/// Open the web UI in the default browser, leaving the desktop window open.
+///
+/// In dev, the frontend is served by the Vite dev server on port 1420. In a
+/// packaged build there is no dev server — the app's own HTTP API (see
+/// `http_api::start_http_server`) serves the embedded frontend bundle on its
+/// resolved bind address (`http_api::resolve_bind_addr`, default port
+/// 11423), so that's what gets opened instead.
 #[cfg(feature = "desktop")]
 #[tauri::command]
-async fn switch_to_browser(app: tauri::AppHandle) -> Result<(), String> {
-    tauri_plugin_opener::open_url("http://localhost:1420", None::<&str>)
-        .map_err(|e| e.to_string())?;
+async fn switch_to_browser() -> Result<(), String> {
+    let url = if tauri::is_dev() {
+        "http://localhost:1420".to_string()
+    } else {
+        let (host, port) = http_api::resolve_bind_addr();
+        browser_url(&host, port)
+    };
 
-    if let Some(w) = app.get_webview_window("main") {
-        let _ = w.hide();
+    tauri_plugin_opener::open_url(url, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn browser_url_builds_http_url_from_resolved_host_and_port() {
+        assert_eq!(browser_url("127.0.0.1", 11423), "http://127.0.0.1:11423");
     }
 
-    Ok(())
+    #[test]
+    fn browser_url_is_not_the_hardcoded_dev_port() {
+        assert_ne!(browser_url("127.0.0.1", 11423), "http://localhost:1420");
+    }
+
+    #[test]
+    fn browser_url_uses_the_given_host_and_port_verbatim() {
+        assert_eq!(browser_url("0.0.0.0", 8080), "http://0.0.0.0:8080");
+    }
 }

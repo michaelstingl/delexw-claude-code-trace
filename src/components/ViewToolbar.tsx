@@ -97,7 +97,7 @@ function RightCluster({
               await invoke("switch_to_browser");
             } catch {}
           }}
-          title="Open in browser and hide this window"
+          title="Open this view in your browser"
         >
           Open in Browser
         </button>
