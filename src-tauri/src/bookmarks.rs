@@ -126,8 +126,13 @@ pub fn reconcile_one(b: &mut Bookmark, s: &SessionInfo) -> bool {
 
     // Numbers: piggyback on a name/recap change, OR sync once when the session
     // has settled (not ongoing) and the stored snapshot lags. Never per-turn.
-    let numbers_lag = b.meta.turn_count != s.turn_count
+    let numbers_lag = b.meta.model != s.model
+        || b.meta.turn_count != s.turn_count
         || b.meta.total_tokens != s.total_tokens
+        || b.meta.input_tokens != s.input_tokens
+        || b.meta.output_tokens != s.output_tokens
+        || b.meta.cache_read_tokens != s.cache_read_tokens
+        || b.meta.cache_creation_tokens != s.cache_creation_tokens
         || b.meta.context_tokens != s.context_tokens
         || b.meta.cost_usd != s.cost_usd
         || b.meta.duration_ms != s.duration_ms;
@@ -216,8 +221,13 @@ mod tests {
             label: "A".into(),
             recap: Some("A".into()),
             meta: BookmarkMeta {
+                model: "claude-x".into(),
                 turn_count: 5,
                 total_tokens: 100,
+                input_tokens: 10,
+                output_tokens: 20,
+                cache_read_tokens: 30,
+                cache_creation_tokens: 40,
                 context_tokens: 50,
                 cost_usd: 1.5,
                 duration_ms: 1000,
@@ -298,5 +308,27 @@ mod tests {
 
         assert!(!reconcile_one(&mut b, &s));
         assert_eq!(b.meta.turn_count, 5); // unchanged
+    }
+
+    #[test]
+    fn reconcile_settles_model_change_when_other_numbers_are_unchanged() {
+        let mut b = sample_bookmark();
+        let mut s = sample_session();
+        s.is_ongoing = false;
+        s.model = "claude-y".into(); // only the model differs from the stored snapshot
+
+        assert!(reconcile_one(&mut b, &s));
+        assert_eq!(b.meta.model, "claude-y");
+    }
+
+    #[test]
+    fn reconcile_self_heals_recap_turn_when_recap_text_is_unchanged() {
+        let mut b = sample_bookmark();
+        let mut s = sample_session();
+        s.recap = Some(b.recap.clone().unwrap()); // same recap text
+        s.recap_turn = 12; // but stored recap_turn (5) is stale/legacy
+
+        assert!(reconcile_one(&mut b, &s));
+        assert_eq!(b.meta.recap_turn, 12);
     }
 }

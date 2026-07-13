@@ -82,7 +82,10 @@ function LivePinnedRow({
   const displayName = session.name || bookmark.label || session.first_message || session.session_id;
   const liveRecap = session.recap && session.recap.length > 0 ? session.recap : null;
   const recap = liveRecap ?? bookmark.recap;
-  const ageTurns = liveRecap === null ? session.turn_count - bookmark.meta.recap_turn : 0;
+  const ageTurns =
+    liveRecap === null && bookmark.meta.recap_turn > 0
+      ? session.turn_count - bookmark.meta.recap_turn
+      : 0;
   return (
     <div className="picker__session picker__session--pinned" onClick={() => onSelect(session)}>
       <div className="picker__session-top">

@@ -263,6 +263,34 @@ describe("SessionPicker", () => {
     expect(stale.textContent).toBe(" · +12 turns ago");
   });
 
+  it("pinned row: legacy bookmark with recap_turn 0 shows no age marker on a live working session", async () => {
+    vi.mocked(listBookmarks).mockResolvedValue([
+      makeBookmark({
+        session_id: "session1",
+        label: "Frozen name",
+        recap: "R",
+        meta: { ...makeBookmark().meta, recap_turn: 0 },
+      }),
+    ]);
+    const sessions = [
+      makeSession({ session_id: "session1", name: "Live name", recap: null, turn_count: 30 }),
+    ];
+    render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    await waitFor(() => expect(screen.getByText(/Pinned/)).toBeInTheDocument());
+    const label = document.querySelector(".picker__session--pinned .picker__recap-label")!;
+    expect(label.textContent).toBe("Recap:");
+    expect(label.querySelector(".picker__recap-label__stale")).toBeNull();
+  });
+
   it("pinned row: falls back to the bookmark label when the session has no name", async () => {
     vi.mocked(listBookmarks).mockResolvedValue([
       makeBookmark({ session_id: "session1", label: "Pinned name" }),
