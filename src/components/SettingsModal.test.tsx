@@ -27,6 +27,7 @@ describe("SettingsModal", () => {
   const onSaved = vi.fn();
   const onFontScaleChange = vi.fn();
   const onRecapPreviewChange = vi.fn();
+  const onShowBookmarksChange = vi.fn();
   const onPickerFieldsChange = vi.fn();
 
   beforeEach(() => {
@@ -49,6 +50,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -70,6 +73,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -92,6 +97,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -114,6 +121,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -132,6 +141,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -163,6 +174,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -187,6 +200,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -210,6 +225,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -237,6 +254,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -264,6 +283,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -290,6 +311,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={onFontScaleChange}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
@@ -316,11 +339,33 @@ describe("SettingsModal", () => {
         onFontScaleChange={() => {}}
         recapPreview={true}
         onRecapPreviewChange={onChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onPickerFieldsChange}
       />,
     );
     fireEvent.click(screen.getByRole("switch", { name: /recap preview/i }));
+    expect(onChange).toHaveBeenCalledWith(false);
+  });
+
+  it("toggles bookmarks visibility via the BOOKMARKS control", async () => {
+    const onChange = vi.fn();
+    render(
+      <SettingsModal
+        onClose={() => {}}
+        onSaved={() => {}}
+        fontScale={1}
+        onFontScaleChange={() => {}}
+        recapPreview={true}
+        onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onChange}
+        pickerFields={DEFAULT_PICKER_FIELDS}
+        onPickerFieldsChange={onPickerFieldsChange}
+      />,
+    );
+    fireEvent.click(screen.getByRole("switch", { name: /show bookmarks/i }));
     expect(onChange).toHaveBeenCalledWith(false);
   });
 
@@ -334,6 +379,8 @@ describe("SettingsModal", () => {
         onFontScaleChange={() => {}}
         recapPreview={true}
         onRecapPreviewChange={onRecapPreviewChange}
+        showBookmarks={true}
+        onShowBookmarksChange={onShowBookmarksChange}
         pickerFields={DEFAULT_PICKER_FIELDS}
         onPickerFieldsChange={onChange}
       />,

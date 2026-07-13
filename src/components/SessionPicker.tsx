@@ -42,6 +42,12 @@ interface SessionPickerProps {
    */
   recapPreview?: boolean;
   /**
+   * When true (default), the picker shows the ★ bookmark star on each row and
+   * the ★ Pinned group at the top. When false, bookmarking UI is hidden and
+   * the full session list renders without deduping pinned sessions out.
+   */
+  showBookmarks?: boolean;
+  /**
    * Which per-session detail fields to show in the meta line and header totals.
    * Defaults to all fields on when not supplied (e.g. in isolated tests).
    */
@@ -63,6 +69,7 @@ export function SessionPicker({
   onSelectIndex,
   onVisiblePathsChange,
   recapPreview = false,
+  showBookmarks = true,
   pickerFields = DEFAULT_PICKER_FIELDS,
   viewActionsRef,
 }: SessionPickerProps) {
@@ -86,7 +93,12 @@ export function SessionPicker({
   });
 
   const dateGroups = groupByDate(sessions);
-  const pinnedIds = useMemo(() => new Set(bookmarks.map((b) => b.session_id)), [bookmarks]);
+  // Only dedup pinned sessions out of the normal list when the pinned group
+  // showing them is actually rendered; otherwise they'd disappear entirely.
+  const pinnedIds = useMemo(
+    () => (showBookmarks ? new Set(bookmarks.map((b) => b.session_id)) : new Set<string>()),
+    [bookmarks, showBookmarks],
+  );
 
   const { totalTokens, totalCost } = useMemo(() => {
     let tokens = 0;
@@ -135,7 +147,7 @@ export function SessionPicker({
           </div>
         )}
 
-        {!loading && (
+        {!loading && showBookmarks && (
           <PinnedGroup
             bookmarks={bookmarks}
             sessions={sessions}
@@ -180,11 +192,13 @@ export function SessionPicker({
                       <span className="picker__session-icon">
                         <BsClaude />
                       </span>
-                      <BookmarkStar
-                        session={session}
-                        bookmarked={isBookmarked(bookmarks, session.session_id)}
-                        onChange={setBookmarks}
-                      />
+                      {showBookmarks && (
+                        <BookmarkStar
+                          session={session}
+                          bookmarked={isBookmarked(bookmarks, session.session_id)}
+                          onChange={setBookmarks}
+                        />
+                      )}
                       <span
                         className={`picker__session-preview${session.name ? " picker__session-preview--named" : ""}`}
                       >

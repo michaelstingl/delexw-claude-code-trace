@@ -725,4 +725,47 @@ describe("SessionPicker", () => {
       expect(document.querySelector(".picker__session-stat--cost")).toBeInTheDocument();
     });
   });
+
+  describe("showBookmarks", () => {
+    it("hides the pinned group and the per-row star when off", async () => {
+      vi.mocked(listBookmarks).mockResolvedValue([
+        makeBookmark({ session_id: "session1", label: "Frozen name" }),
+      ]);
+      const sessions = [makeSession({ session_id: "session1", name: "Live name" })];
+      render(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+          showBookmarks={false}
+        />,
+      );
+      await waitFor(() => expect(listBookmarks).toHaveBeenCalled());
+      expect(screen.queryByText(/Pinned/)).not.toBeInTheDocument();
+      expect(document.querySelector(".picker__session--pinned")).not.toBeInTheDocument();
+      expect(document.querySelector(".bookmark-star")).not.toBeInTheDocument();
+      // The session still renders (undeduped) since there's no pinned group to show it in.
+      expect(screen.getByText("Live name")).toBeInTheDocument();
+    });
+
+    it("shows the pinned group and the per-row star by default", async () => {
+      vi.mocked(listBookmarks).mockResolvedValue([]);
+      const sessions = [makeSession({ session_id: "session1", name: "Live name" })];
+      render(
+        <SessionPicker
+          sessions={sessions}
+          loading={false}
+          searchQuery=""
+          selectedIndex={0}
+          onSelect={vi.fn()}
+          onSearchChange={vi.fn()}
+        />,
+      );
+      await waitFor(() => expect(listBookmarks).toHaveBeenCalled());
+      expect(document.querySelector(".bookmark-star")).toBeInTheDocument();
+    });
+  });
 });

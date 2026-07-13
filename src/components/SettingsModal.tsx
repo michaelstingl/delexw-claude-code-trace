@@ -23,6 +23,10 @@ interface SettingsModalProps {
   recapPreview: boolean;
   /** Toggle recap preview (persisted by the caller). */
   onRecapPreviewChange: (on: boolean) => void;
+  /** Whether the picker shows the ★ bookmark star and the pinned group. */
+  showBookmarks: boolean;
+  /** Toggle bookmark visibility (persisted by the caller). */
+  onShowBookmarksChange: (on: boolean) => void;
   /** Which per-session detail fields show in the session picker. */
   pickerFields: Record<PickerField, boolean>;
   /** Toggle a picker field's visibility (persisted by the caller). */
@@ -43,6 +47,8 @@ export function SettingsModal({
   onFontScaleChange,
   recapPreview,
   onRecapPreviewChange,
+  showBookmarks,
+  onShowBookmarksChange,
   pickerFields,
   onPickerFieldsChange,
 }: SettingsModalProps) {
@@ -245,6 +251,20 @@ export function SettingsModal({
         >
           <span className="settings-modal__toggle-knob" />
           <span className="settings-modal__toggle-label">{recapPreview ? "On" : "Off"}</span>
+        </button>
+
+        <label className="settings-modal__label settings-modal__label--section">Bookmarks</label>
+        <p className="settings-modal__hint">Show the ★ button and the pinned group.</p>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showBookmarks}
+          aria-label="Show bookmarks"
+          className={`settings-modal__toggle${showBookmarks ? " settings-modal__toggle--on" : ""}`}
+          onClick={() => onShowBookmarksChange(!showBookmarks)}
+        >
+          <span className="settings-modal__toggle-knob" />
+          <span className="settings-modal__toggle-label">{showBookmarks ? "On" : "Off"}</span>
         </button>
 
         <label className="settings-modal__label settings-modal__label--section">
