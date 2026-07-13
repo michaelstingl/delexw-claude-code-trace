@@ -3089,8 +3089,10 @@ mod tests {
         // uuid is required — entries without it are skipped before token accumulation (see the
         // `if uuid.is_empty() { continue; }` guard near the top of the scan loop).
         let body = concat!(
-            r#"{"type":"assistant","uuid":"a1","requestId":"r1","message":{"model":"claude-opus-4","stop_reason":"end_turn","usage":{"input_tokens":100,"cache_read_input_tokens":1000,"output_tokens":10}}}"#, "\n",
-            r#"{"type":"assistant","uuid":"a2","requestId":"r2","message":{"model":"claude-opus-4","stop_reason":"end_turn","usage":{"input_tokens":50,"cache_read_input_tokens":5000,"cache_creation_input_tokens":200,"output_tokens":20}}}"#, "\n",
+            r#"{"type":"assistant","uuid":"a1","requestId":"r1","message":{"model":"claude-opus-4","stop_reason":"end_turn","usage":{"input_tokens":100,"cache_read_input_tokens":1000,"output_tokens":10}}}"#,
+            "\n",
+            r#"{"type":"assistant","uuid":"a2","requestId":"r2","message":{"model":"claude-opus-4","stop_reason":"end_turn","usage":{"input_tokens":50,"cache_read_input_tokens":5000,"cache_creation_input_tokens":200,"output_tokens":20}}}"#,
+            "\n",
         );
         std::fs::write(&path, body).unwrap();
 

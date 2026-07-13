@@ -12,7 +12,7 @@ export type PickerField = "model" | "turns" | "ctx" | "tok" | "cost" | "duration
 export const PICKER_FIELDS: { id: PickerField; label: string }[] = [
   { id: "model", label: "Model" },
   { id: "turns", label: "Turns" },
-  { id: "ctx", label: "Context size" },
+  { id: "ctx", label: "Context tokens" },
   { id: "tok", label: "Token usage" },
   { id: "cost", label: "Cost" },
   { id: "duration", label: "Duration" },
