@@ -314,6 +314,22 @@ impl AppState {
             let liveness = self.live_liveness_cached(&dir);
             crate::parser::session::apply_liveness_map(&mut sessions, &liveness);
         }
+
+        // Keep bookmarked snapshots tracking their live sessions (SB-D10).
+        // Single writer: the same mutex every other bookmark write uses.
+        {
+            let mut list = self.bookmarks.lock().map_err(|e| e.to_string())?;
+            let mut dirty = false;
+            for s in &sessions {
+                if let Some(b) = list.iter_mut().find(|b| b.session_id == s.session_id) {
+                    dirty |= crate::bookmarks::reconcile_one(b, s);
+                }
+            }
+            if dirty {
+                let _ = crate::bookmarks::save_bookmarks(&list); // best-effort; display already live
+            }
+        }
+
         Ok(sessions)
     }
 
