@@ -14,4 +14,5 @@ pub mod bookmarks;
 pub mod git;
 pub mod settings;
 pub mod terminal;
+pub mod version;
 pub mod wsl;

@@ -18,4 +18,5 @@ export type {
   ViewState,
   Bookmark,
   BookmarkMeta,
+  VersionInfo,
 } from "../../shared/types";

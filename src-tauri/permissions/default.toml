@@ -21,6 +21,7 @@ permissions = [
   "allow-list-bookmarks",
   "allow-add-bookmark",
   "allow-remove-bookmark",
+  "allow-get-version",
 ]
 
 [[permission]]
@@ -122,3 +123,8 @@ commands.allow = ["add_bookmark"]
 identifier = "allow-remove-bookmark"
 description = "Allow removing a bookmarked session"
 commands.allow = ["remove_bookmark"]
+
+[[permission]]
+identifier = "allow-get-version"
+description = "Allow reading the app's version, commit, and dirty status"
+commands.allow = ["get_version"]

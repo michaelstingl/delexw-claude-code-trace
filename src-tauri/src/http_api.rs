@@ -110,6 +110,7 @@ async fn run_server(state: Arc<HttpState>) {
         .route("/api/git-info", get(api_get_git_info))
         .route("/api/debug-log", get(api_get_debug_log))
         .route("/api/focus", post(api_focus_session_window))
+        .route("/api/version", get(api_get_version))
         .route("/api/events", get(api_events));
 
     if let Some(dir) = resolve_static_dir() {
@@ -264,6 +265,14 @@ async fn api_remove_bookmark(
         Ok(list) => ok_json(&list),
         Err(e) => err_response(axum::http::StatusCode::INTERNAL_SERVER_ERROR, e),
     }
+}
+
+// ---------------------------------------------------------------------------
+// Version
+// ---------------------------------------------------------------------------
+
+async fn api_get_version() -> Response {
+    ok_json(&crate::version::current())
 }
 
 // ---------------------------------------------------------------------------

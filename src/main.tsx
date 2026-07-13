@@ -1,6 +1,8 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { openUrl } from "./lib/openUrl";
+import { logVersionBadges } from "./lib/versionBadges";
+import { getBackendVersion } from "./lib/versions";
 import { App } from "./App";
 import "./styles/global.css";
 
@@ -14,6 +16,9 @@ document.addEventListener("click", (e) => {
     openUrl(href);
   }
 });
+
+// Log version badges on boot
+void logVersionBadges(getBackendVersion);
 
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("Missing #root element");
