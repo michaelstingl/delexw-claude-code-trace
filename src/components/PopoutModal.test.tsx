@@ -68,4 +68,24 @@ describe("PopoutModal", () => {
     expect(modal.style.width).toBe("800px");
     expect(modal.style.height).toBe("640px");
   });
+
+  describe("fitContent", () => {
+    it("does not set an inline height", () => {
+      const { container } = render(<PopoutModal {...defaultProps} fitContent initialWidth={520} />);
+      const modal = container.querySelector(".popout-modal") as HTMLElement;
+      expect(modal.style.width).toBe("520px");
+      expect(modal.style.height).toBe("");
+    });
+
+    it("applies the popout-modal--fit modifier class", () => {
+      const { container } = render(<PopoutModal {...defaultProps} fitContent />);
+      const modal = container.querySelector(".popout-modal") as HTMLElement;
+      expect(modal.classList.contains("popout-modal--fit")).toBe(true);
+    });
+
+    it("does not render a resize handle", () => {
+      const { container } = render(<PopoutModal {...defaultProps} fitContent />);
+      expect(container.querySelector(".popout-modal__resize-handle")).not.toBeInTheDocument();
+    });
+  });
 });

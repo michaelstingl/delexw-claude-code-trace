@@ -149,7 +149,7 @@ export function SettingsModal({
       onClose={onClose}
       header={<span className="settings-modal__title">Settings</span>}
       initialWidth={520}
-      initialHeight={400}
+      fitContent
     >
       <div className="settings-modal">
         <label className="settings-modal__label" htmlFor="projects-dir">

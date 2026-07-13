@@ -2012,6 +2012,14 @@ body {
   max-height: 95vh;
 }
 
+/* Content-fit variant: no fixed/resized height, grows with content up to a
+ * viewport cap. .popout-modal__body's overflow:auto then only kicks in when
+ * content exceeds the cap, giving a single scroll surface. */
+.popout-modal--fit {
+  height: auto;
+  max-height: 85vh;
+}
+
 .popout-modal__header {
   display: flex;
   align-items: center;
@@ -2705,8 +2713,6 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  max-height: 120px;
-  overflow-y: auto;
 }
 
 .settings-modal__wsl-item {
@@ -2838,7 +2844,13 @@ body {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  position: sticky;
+  bottom: 0;
   margin-top: 4px;
+  padding-top: 8px;
+  padding-bottom: 4px;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
 
 .settings-modal__btn {

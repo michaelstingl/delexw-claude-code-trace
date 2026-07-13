@@ -7,6 +7,9 @@ interface PopoutModalProps {
   children: ReactNode;
   initialWidth?: number;
   initialHeight?: number;
+  /** Size the modal to fit its content (up to a viewport cap) instead of a
+   * fixed/resizable box. Disables the resize handle and the inline height. */
+  fitContent?: boolean;
 }
 
 export function PopoutModal({
@@ -15,6 +18,7 @@ export function PopoutModal({
   children,
   initialWidth,
   initialHeight,
+  fitContent,
 }: PopoutModalProps) {
   const [size, setSize] = useState(() => ({
     width: initialWidth ?? Math.round(window.innerWidth * 0.8),
@@ -83,8 +87,8 @@ export function PopoutModal({
   return (
     <div className="popout-overlay" onClick={handleOverlayClick}>
       <div
-        className="popout-modal"
-        style={{ width: size.width, height: size.height }}
+        className={fitContent ? "popout-modal popout-modal--fit" : "popout-modal"}
+        style={fitContent ? { width: size.width } : { width: size.width, height: size.height }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="popout-modal__header">
@@ -94,7 +98,7 @@ export function PopoutModal({
           </button>
         </div>
         <div className="popout-modal__body">{children}</div>
-        <div className="popout-modal__resize-handle" onMouseDown={onResizeStart} />
+        {!fitContent && <div className="popout-modal__resize-handle" onMouseDown={onResizeStart} />}
       </div>
     </div>
   );
