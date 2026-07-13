@@ -54,6 +54,7 @@ function makeSession(overrides: Partial<SessionInfo> = {}): SessionInfo {
     output_tokens: 1000,
     cache_read_tokens: 0,
     cache_creation_tokens: 0,
+    context_tokens: 0,
     cost_usd: 0.05,
     duration_ms: 30000,
     model: "claude-sonnet-4-20250514",
@@ -288,6 +289,33 @@ describe("SessionPicker", () => {
     // Cost appears in both header and session row
     expect(screen.getAllByText("1.23")).toHaveLength(2);
     expect(screen.getByText("1m 0s")).toBeInTheDocument();
+  });
+
+  it("shows the ctx stat when context_tokens is set, hides it when zero", () => {
+    const sessions = [makeSession({ session_id: "with-ctx", context_tokens: 12000 })];
+    const { rerender } = render(
+      <SessionPicker
+        sessions={sessions}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/ctx 12\.0k/)).toBeInTheDocument();
+
+    rerender(
+      <SessionPicker
+        sessions={[makeSession({ session_id: "no-ctx", context_tokens: 0 })]}
+        loading={false}
+        searchQuery=""
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/ctx /)).not.toBeInTheDocument();
   });
 
   it("search input updates on change", () => {

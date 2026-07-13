@@ -183,6 +183,11 @@ export function SessionPicker({
                       {model}
                     </span>
                     <span className="picker__session-stat">{session.turn_count} turns</span>
+                    {session.context_tokens > 0 && (
+                      <span className="picker__session-stat">
+                        ctx {formatTokens(session.context_tokens)}
+                      </span>
+                    )}
                     {session.total_tokens > 0 && (
                       <span className="picker__session-stat">
                         {formatTokens(session.total_tokens)} tok

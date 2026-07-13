@@ -101,6 +101,7 @@ export interface SessionInfo {
   output_tokens: number;
   cache_read_tokens: number;
   cache_creation_tokens: number;
+  context_tokens: number;
   cost_usd: number;
   duration_ms: number;
   model: string;
